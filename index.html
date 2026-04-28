@@ -1,122 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JJazzLab Pessoal - Sequenciador PRO</title>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tonaljs/tonal/browser/tonal.min.js"></script>
-    
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
-        }
-        .container {
-            background: #252526;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 900px;
-        }
-        
-        /* PAINEL SUPERIOR: Ferramentas e Volume */
-        .painel-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #333333;
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .painel-grupo {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        .painel-top label { font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; }
-        .painel-top input[type="number"] { width: 50px; padding: 5px; border-radius: 4px; border: none; font-weight: bold; text-align: center; }
-        .painel-top select { padding: 5px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; }
-        
-        /* Barra de Volume */
-        .volume-control { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: bold; }
-        input[type="range"] { cursor: pointer; }
-
-        /* BOTOES DE PLAY E CONTROLE */
-        .botoes-play button, .btn-add {
-            padding: 10px 15px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; transition: opacity 0.2s;
-        }
-        .botoes-play button:hover, .btn-add:hover { opacity: 0.8; }
-        .btn-tocar { background-color: #4CAF50; color: white; }
-        .btn-parar { background-color: #f44336; color: white; }
-        .btn-add { background-color: #007acc; color: white; width: 100%; margin-top: 15px; font-size: 15px;}
-        
-        /* GRADE DE COMPASSOS */
-        .grade-compassos { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; }
-        .compasso {
-            background: #1e1e1e; border: 2px solid #555; border-radius: 6px; padding: 12px 10px 10px 10px;
-            display: flex; gap: 5px; width: calc(50% - 7.5px); box-sizing: border-box; position: relative; margin-top: 10px;
-        }
-        .compasso-label { position: absolute; top: -12px; left: 10px; background: #252526; padding: 0 5px; font-size: 12px; font-weight: bold; color: #888; }
-        .tempo { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-        .tempo input[type="text"] { width: 100%; padding: 8px 0; text-align: center; font-weight: bold; font-size: 15px; border: 1px solid #444; background: #3c3c3c; color: #fff; border-radius: 4px; box-sizing: border-box; }
-        .tempo select { width: 100%; padding: 4px 0; text-align: center; font-size: 11px; background: #2d2d2d; color: #aaa; border: 1px solid #444; border-radius: 4px; cursor: pointer; }
-        
-        /* ESTADOS VISUAIS */
-        .tocando { border-color: #4CAF50 !important; background: #2e4a2e !important; }
-        .erro-acorde { border-color: #f44336 !important; background: #4a2e2e !important; }
-        #status-bar { text-align: center; font-size: 12px; color: #aaa; margin-top: 10px; height: 15px;}
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div class="painel-top">
-        <div class="painel-grupo">
-            <label>Som: 
-                <select id="instrument-select">
-                    <option value="piano">Piano Real</option>
-                    <option value="violao">Violão (Pluck)</option>
-                    <option value="synth">Sintetizador</option>
-                </select>
-            </label>
-            <div class="volume-control">
-                🔉 <input type="range" id="volume-slider" min="-50" max="0" value="-10"> 🔊
-            </div>
-        </div>
-
-        <div class="painel-grupo">
-            <label>BPM: <input type="number" id="bpm-input" value="100"></label>
-            <label>Início (Comp): <input type="number" id="start-measure" value="1" min="1"></label>
-            <label><input type="checkbox" id="metro-toggle"> Metrônomo</label>
-            <label><input type="checkbox" id="loop-toggle"> Loop</label>
-        </div>
-
-        <div class="botoes-play">
-            <button class="btn-tocar" id="btn-play" onclick="tocarSequencia()">▶ Tocar</button>
-            <button class="btn-parar" onclick="pararSequencia()">⏹ Parar</button>
-        </div>
-    </div>
-
-    <div class="grade-compassos" id="grade"></div>
-    <button class="btn-add" onclick="adicionarCompasso()">➕ Adicionar Compasso</button>
-    <div id="status-bar">Aguardando...</div>
-</div>
-
-<script>
-    // --- GERENCIAMENTO DE VOLUME MASTER ---
+// --- GERENCIAMENTO DE VOLUME MASTER ---
     Tone.Destination.volume.value = -10; // Padrão
     document.getElementById('volume-slider').addEventListener('input', (e) => {
         Tone.Destination.volume.value = e.target.value;
@@ -125,9 +7,9 @@
     // --- INSTRUMENTOS ---
     const statusText = document.getElementById('status-bar');
     statusText.innerText = "Baixando samples de Piano da nuvem... Aguarde.";
-    document.getElementById('btn-play').disabled = true; // Bloqueia o play até o piano carregar
+    document.getElementById('btn-play').disabled = true;
 
-    // 1. Piano Real (Sampler carregando arquivos MP3 públicos)
+    // 1. Piano Real
     const instPiano = new Tone.Sampler({
         urls: {
             C4: "C4.mp3",
@@ -142,20 +24,23 @@
         }
     }).toDestination();
 
-    // 2. Violão Sintético (Modelagem de corda dedilhada)
-    const instViolao = new Tone.PolySynth(Tone.PluckSynth, {
-        attackNoise: 1, dampening: 4000, resonance: 0.9, volume: 5
+    // 2. Violão Sintético (FMSynth - Compatível com PolySynth)
+    const instViolao = new Tone.PolySynth(Tone.FMSynth, {
+        volume: 2,
+        envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 1 },
+        harmonicity: 0.5,
+        modulationIndex: 1.2
     }).toDestination();
 
-    // 3. Sintetizador (O original que estávamos usando)
+    // 3. Sintetizador Clássico
     const instSynth = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: "triangle" }, envelope: { attack: 0.05, decay: 0.2, sustain: 0.8, release: 1 }
+        oscillator: { type: "triangle" }, 
+        envelope: { attack: 0.05, decay: 0.2, sustain: 0.8, release: 1 }
     }).toDestination();
 
     // Metrônomo
     const metronomoSynth = new Tone.MembraneSynth({ volume: -15 }).toDestination();
 
-    // Dicionário de seleção
     const bancoInstrumentos = {
         'piano': instPiano,
         'violao': instViolao,
@@ -195,22 +80,20 @@
         Tone.Transport.loopEnd = `${totalCompassos}:0:0`;
     }
 
+    // Inicializa
     for (let i = 0; i < 4; i++) { criarCompasso(); }
 
-    // Pré-preenchimento com acordes invertidos para teste
     document.getElementById('input-beat-0-0').value = 'C';
-    document.getElementById('input-beat-0-2').value = 'G/B'; // Acorde invertido
+    document.getElementById('input-beat-0-2').value = 'G/B'; 
     document.getElementById('input-beat-1-0').value = 'Am7';
-    document.getElementById('input-beat-1-2').value = 'C/E'; // Acorde invertido
+    document.getElementById('input-beat-1-2').value = 'C/E';
 
-    // --- LÓGICA DE REPRODUÇÃO E ACORDES INVERTIDOS ---
+    // --- LÓGICA DE REPRODUÇÃO ---
     async function tocarSequencia() {
         await Tone.start(); 
         pararSequencia();   
 
-        // Seleciona o instrumento escolhido no dropdown
         const instSelecionado = bancoInstrumentos[document.getElementById('instrument-select').value];
-
         Tone.Transport.bpm.value = parseInt(document.getElementById('bpm-input').value);
 
         const isLoop = document.getElementById('loop-toggle').checked;
@@ -251,15 +134,11 @@
                         const raiz = chordInfo.tonic || acordeAtual.charAt(0);
                         const raizComOitava = `${raiz}${oitavaAtual}`;
                         
-                        // Transpõe os intervalos padrão
                         notasReais = chordInfo.intervals.map(intervalo => 
                             Tonal.Note.transpose(raizComOitava, intervalo)
                         );
 
-                        // --- MAGICA DOS ACORDES INVERTIDOS (SLASH CHORDS) ---
-                        // Se houver um baixo específico (ex: o "E" no C/E)
                         if (chordInfo.bass) {
-                            // Adiciona a nota do baixo UMA OITAVA ABAIXO para dar sustentação
                             const notaBaixo = `${chordInfo.bass}${oitavaAtual - 1}`;
                             notasReais.push(notaBaixo);
                         }
@@ -278,7 +157,6 @@
                         }, time);
 
                         if (!chordInfo.empty) {
-                            // Toca as notas no instrumento escolhido
                             instSelecionado.triggerAttackRelease(notasReais, "4n", time);
                         }
                     }, tempoMusical);
@@ -286,12 +164,10 @@
             }
         }
 
-        // --- INICIAR DE UM COMPASSO ESPECÍFICO ---
         let startMeasure = parseInt(document.getElementById('start-measure').value);
-        if (startMeasure > totalCompassos) startMeasure = totalCompassos; // Evita bugar se digitar um número maior que o grid
+        if (startMeasure > totalCompassos) startMeasure = totalCompassos;
         if (startMeasure < 1) startMeasure = 1;
         
-        // Define a "agulha" do tocador para começar no compasso escolhido (em programação o compasso 1 é o 0)
         Tone.Transport.position = `${startMeasure - 1}:0:0`;
         
         if (!isLoop) {
@@ -310,7 +186,3 @@
         });
         statusText.innerText = "Parado.";
     }
-</script>
-
-</body>
-</html>
