@@ -3,147 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player de Acordes</title>
+    <title>JJazzLab Pessoal - Sequenciador</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #282c34;
-            color: #ffffff;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-top: 50px;
+            padding: 40px 20px;
             margin: 0;
         }
         .container {
-            background: #3a3f4b;
+            background: #252526;
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            text-align: center;
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
             width: 100%;
-            max-width: 500px;
+            max-width: 800px;
         }
-        textarea {
-            width: 90%;
-            height: 80px;
-            padding: 15px;
+        .painel-controle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #333333;
+            padding: 15px 20px;
+            border-radius: 8px;
             margin-bottom: 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
-            resize: none;
-            text-transform: uppercase;
         }
-        button {
-            background-color: #61dafb;
-            color: #282c34;
-            border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.1s;
+        .painel-controle label { font-weight: bold; font-size: 14px; }
+        .painel-controle input[type="number"] {
+            width: 60px; padding: 5px; border-radius: 4px; border: none; font-weight: bold; text-align: center;
         }
-        button:hover { background-color: #4fa8c7; }
-        button:active { transform: scale(0.98); }
-        .instrucoes { margin-top: 20px; font-size: 14px; color: #abb2bf; }
-        #status { margin-top: 15px; font-size: 24px; font-weight: bold; color: #98c379; min-height: 30px;}
+        .botoes-play button {
+            padding: 10px 20px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;
+        }
+        .btn-tocar { background-color: #4CAF50; color: white; }
+        .btn-parar { background-color: #f44336; color: white; }
+        
+        /* O Grid Estilo Band-in-a-Box */
+        .grade-compassos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .compasso {
+            background: #1e1e1e;
+            border: 2px solid #555;
+            border-radius: 6px;
+            padding: 10px;
+            display: flex;
+            gap: 5px;
+            width: calc(50% - 15px); /* 2 compassos por linha */
+            box-sizing: border-box;
+            position: relative;
+        }
+        .compasso-label {
+            position: absolute; top: -10px; left: 10px; background: #252526; padding: 0 5px; font-size: 12px; font-weight: bold; color: #888;
+        }
+        .tempo {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .tempo input[type="text"] {
+            width: 100%; padding: 8px 0; text-align: center; font-weight: bold; font-size: 16px; border: 1px solid #444; background: #3c3c3c; color: #fff; border-radius: 4px; box-sizing: border-box; text-transform: uppercase;
+        }
+        .tempo select {
+            width: 100%; padding: 4px 0; text-align: center; font-size: 12px; background: #2d2d2d; color: #aaa; border: 1px solid #444; border-radius: 4px; cursor: pointer;
+        }
+        .tocando { border-color: #4CAF50 !important; background: #2e4a2e !important; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🎵 Tocador de Acordes</h2>
-    
-    <textarea id="chord-input" placeholder="Ex: C G Am F"></textarea>
-    
-    <button onclick="tocarAcordes()">Tocar Sequência</button>
-    
-    <div id="status"></div>
-
-    <div class="instrucoes">
-        Digite os acordes separados por espaço. <br>
-        Suportados neste exemplo: C, Cm, D, Dm, E, Em, F, Fm, G, Gm, A, Am, B, Bm.
+    <div class="painel-controle">
+        <div>
+            <label>BPM: <input type="number" id="bpm-input" value="100"></label>
+            <label style="margin-left: 20px;">
+                <input type="checkbox" id="metro-toggle"> Metrônomo
+            </label>
+        </div>
+        <div class="botoes-play">
+            <button class="btn-tocar" onclick="tocarSequencia()">▶ Tocar</button>
+            <button class="btn-parar" onclick="pararSequencia()">⏹ Parar</button>
+        </div>
     </div>
+
+    <div class="grade-compassos" id="grade">
+        </div>
 </div>
 
 <script>
-    // Configura o Sintetizador Polifônico (capaz de tocar várias notas juntas)
-    // O volume é reduzido para não assustar o usuário (-10 decibéis)
+    // --- MOTORES DE ÁUDIO ---
     const synth = new Tone.PolySynth(Tone.Synth, {
-        volume: -10,
-        oscillator: { type: "triangle" } // Um som de sintetizador suave
+        volume: -8,
+        oscillator: { type: "triangle" },
+        envelope: { attack: 0.05, decay: 0.2, sustain: 0.8, release: 1 }
     }).toDestination();
 
-    // Dicionário de Acordes (Mapeando cifras para notas reais na 4ª oitava)
+    // Sintetizador dedicado apenas para o "Click" do metrônomo
+    const metronomoSynth = new Tone.MembraneSynth({ volume: -15 }).toDestination();
+
+    // --- DICIONÁRIO DE ACORDES (Com Oitavas Relativas) ---
+    // O +0 significa a oitava base escolhida, o +1 significa que a nota pulou para a próxima oitava
     const DICIONARIO_ACORDES = {
-        'C':  ['C4', 'E4', 'G4'],
-        'CM': ['C4', 'Eb4', 'G4'], // Mínusculo 'm' é convertido para 'M' pelo CSS/toUpperCase
-        'D':  ['D4', 'F#4', 'A4'],
-        'DM': ['D4', 'F4', 'A4'],
-        'E':  ['E4', 'G#4', 'B4'],
-        'EM': ['E4', 'G4', 'B4'],
-        'F':  ['F4', 'A4', 'C5'],
-        'FM': ['F4', 'Ab4', 'C5'],
-        'G':  ['G4', 'B4', 'D5'],
-        'GM': ['G4', 'Bb4', 'D5'],
-        'A':  ['A4', 'C#5', 'E5'],
-        'AM': ['A4', 'C5', 'E5'],
-        'B':  ['B4', 'D#5', 'F#5'],
-        'BM': ['B4', 'D5', 'F#5']
+        'C':  ['C+0', 'E+0', 'G+0'],
+        'CM': ['C+0', 'Eb+0', 'G+0'],
+        'D':  ['D+0', 'F#+0', 'A+0'],
+        'DM': ['D+0', 'F+0', 'A+0'],
+        'E':  ['E+0', 'G#+0', 'B+0'],
+        'EM': ['E+0', 'G+0', 'B+0'],
+        'F':  ['F+0', 'A+0', 'C+1'],
+        'FM': ['F+0', 'Ab+0', 'C+1'],
+        'G':  ['G+0', 'B+0', 'D+1'],
+        'GM': ['G+0', 'Bb+0', 'D+1'],
+        'A':  ['A+0', 'C#+1', 'E+1'],
+        'AM': ['A+0', 'C+1', 'E+1'],
+        'B':  ['B+0', 'D#+1', 'F#+1'],
+        'BM': ['B+0', 'D+1', 'F#+1']
     };
 
-    async function tocarAcordes() {
-        // Obrigatório pelos navegadores modernos: o áudio só liga após interação do usuário
-        await Tone.start();
+    // --- CONSTRUÇÃO DA INTERFACE (8 Compassos) ---
+    const NUM_COMPASSOS = 8;
+    const gradeDiv = document.getElementById('grade');
+
+    for (let i = 0; i < NUM_COMPASSOS; i++) {
+        const compassoDiv = document.createElement('div');
+        compassoDiv.className = 'compasso';
+        compassoDiv.innerHTML = `<span class="compasso-label">${i + 1}</span>`;
         
-        const inputStr = document.getElementById('chord-input').value.trim().toUpperCase();
-        const statusDiv = document.getElementById('status');
-        
-        if (!inputStr) {
-            statusDiv.innerText = "Digite alguns acordes!";
-            statusDiv.style.color = "#e06c75"; // Vermelho
-            return;
+        // 4 Tempos (Semínimas) por compasso
+        for (let j = 0; j < 4; j++) {
+            // ID único para referenciar durante a reprodução
+            const beatId = `beat-${i}-${j}`; 
+            
+            compassoDiv.innerHTML += `
+                <div class="tempo">
+                    <input type="text" id="input-${beatId}" placeholder="-">
+                    <select id="octave-${beatId}">
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4" selected>4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+            `;
+        }
+        gradeDiv.appendChild(compassoDiv);
+    }
+
+    // Apenas para facilitar o teste, vou pré-preencher o primeiro compasso
+    document.getElementById('input-beat-0-0').value = 'C';
+    document.getElementById('input-beat-0-2').value = 'G';
+
+    // --- LÓGICA DE REPRODUÇÃO ---
+    let eventosAgendados = []; // Guarda os IDs dos eventos para poder limpar depois
+
+    async function tocarSequencia() {
+        await Tone.start(); // Habilita o áudio no navegador
+        pararSequencia();   // Zera qualquer coisa que esteja tocando
+
+        // Configura o BPM baseado no input do usuário
+        Tone.Transport.bpm.value = parseInt(document.getElementById('bpm-input').value);
+
+        let acordeAtual = null;
+        let oitavaAtual = 4;
+
+        // Varre a grade inteira para construir a linha do tempo
+        for (let i = 0; i < NUM_COMPASSOS; i++) {
+            for (let j = 0; j < 4; j++) {
+                const beatId = `beat-${i}-${j}`;
+                const inputAcorde = document.getElementById(`input-${beatId}`).value.trim().toUpperCase();
+                const selectOitava = document.getElementById(`octave-${beatId}`).value;
+
+                // Lógica de "Band-in-a-Box": Se a caixa tem texto, atualiza a memória. Se estiver vazia, usa a memória.
+                if (inputAcorde) {
+                    acordeAtual = inputAcorde;
+                    oitavaAtual = parseInt(selectOitava);
+                }
+
+                // Calcula o momento exato no tempo musical (Compasso:Tempo:Subdivisão)
+                // Exemplo: O 2º tempo do 1º compasso é "0:1:0"
+                const tempoMusical = `${i}:${j}:0`;
+
+                // Metrônomo: Toca um click (C2 ou C3) em todos os tempos, se ativado
+                if (document.getElementById('metro-toggle').checked) {
+                    const notaClick = j === 0 ? "C3" : "C2"; // Click mais agudo na cabeça do compasso
+                    const idEvento = Tone.Transport.schedule((time) => {
+                        metronomoSynth.triggerAttackRelease(notaClick, "8n", time);
+                    }, tempoMusical);
+                    eventosAgendados.push(idEvento);
+                }
+
+                // Acordes: Toca se houver algum acorde na memória
+                if (acordeAtual && DICIONARIO_ACORDES[acordeAtual]) {
+                    const notasRelativas = DICIONARIO_ACORDES[acordeAtual];
+                    
+                    // Transforma ['C+0', 'E+0', 'G+0'] em ['C4', 'E4', 'G4'] (se a oitava for 4)
+                    const notasReais = notasRelativas.map(nota => {
+                        const partes = nota.split('+');
+                        const nomeNota = partes[0];
+                        const offset = parseInt(partes[1]);
+                        return `${nomeNota}${oitavaAtual + offset}`;
+                    });
+
+                    // Agenda o disparo do sintetizador
+                    const idEvento = Tone.Transport.schedule((time) => {
+                        // Toca o acorde com duração de 1 semínima ("4n")
+                        synth.triggerAttackRelease(notasReais, "4n", time);
+                        
+                        // Lógica Visual: Pinta a caixa atual de verde para feedback visual
+                        Tone.Draw.schedule(() => {
+                            document.querySelectorAll('input[type="text"]').forEach(el => el.classList.remove('tocando'));
+                            document.getElementById(`input-${beatId}`).classList.add('tocando');
+                        }, time);
+
+                    }, tempoMusical);
+                    eventosAgendados.push(idEvento);
+                }
+            }
         }
 
-        // Divide o texto pelos espaços ("C G" vira ["C", "G"])
-        const arrayAcordes = inputStr.split(/\s+/);
+        // Define onde a música deve parar (no final do último compasso)
+        Tone.Transport.stop(`${NUM_COMPASSOS}:0:0`);
         
-        statusDiv.style.color = "#98c379"; // Verde
+        // Dá o play no Relógio Mestre
+        Tone.Transport.start();
+    }
 
-        // Tempo atual do relógio interno do áudio
-        let tempoAtual = Tone.now();
-        const duracaoAcorde = 1; // 1 segundo por acorde
-
-        // Agenda cada acorde na linha do tempo
-        arrayAcordes.forEach((cifra) => {
-            const notas = DICIONARIO_ACORDES[cifra];
-            
-            if (notas) {
-                // Diz ao sintetizador: "Toque essas notas, com essa duração, começando neste tempo exato"
-                synth.triggerAttackRelease(notas, duracaoAcorde - 0.1, tempoAtual);
-                
-                // Atualiza o texto na tela no momento exato em que o acorde toca
-                Tone.Draw.schedule(function(){
-                    statusDiv.innerText = cifra;
-                }, tempoAtual);
-
-                // Avança o relógio para o próximo acorde
-                tempoAtual += duracaoAcorde;
-            } else {
-                console.warn("Acorde não encontrado no dicionário:", cifra);
-            }
-        });
-
-        // Limpa a tela após a sequência terminar
-        Tone.Draw.schedule(function(){
-            statusDiv.innerText = "Fim 🏁";
-            setTimeout(() => { statusDiv.innerText = ""; }, 2000);
-        }, tempoAtual);
+    function pararSequencia() {
+        Tone.Transport.stop();
+        Tone.Transport.cancel(0); // Limpa toda a linha do tempo agendada
+        
+        // Remove a pintura verde de todas as caixas
+        document.querySelectorAll('input[type="text"]').forEach(el => el.classList.remove('tocando'));
     }
 </script>
 
