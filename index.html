@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JJazzLab Pessoal - Sequenciador</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tonaljs/tonal/browser/tonal.min.js"></script>
+    
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -22,7 +25,7 @@
             border-radius: 8px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.5);
             width: 100%;
-            max-width: 800px;
+            max-width: 850px;
         }
         .painel-controle {
             display: flex;
@@ -32,18 +35,21 @@
             padding: 15px 20px;
             border-radius: 8px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
         }
-        .painel-controle label { font-weight: bold; font-size: 14px; }
+        .painel-controle label { font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 5px; }
         .painel-controle input[type="number"] {
             width: 60px; padding: 5px; border-radius: 4px; border: none; font-weight: bold; text-align: center;
         }
-        .botoes-play button {
-            padding: 10px 20px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;
+        .botoes-play button, .btn-add {
+            padding: 10px 20px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer;
         }
+        .botoes-play button { margin-left: 10px; }
         .btn-tocar { background-color: #4CAF50; color: white; }
         .btn-parar { background-color: #f44336; color: white; }
+        .btn-add { background-color: #007acc; color: white; margin-top: 15px; width: 100%; }
         
-        /* O Grid Estilo Band-in-a-Box */
         .grade-compassos {
             display: flex;
             flex-wrap: wrap;
@@ -56,37 +62,35 @@
             padding: 10px;
             display: flex;
             gap: 5px;
-            width: calc(50% - 15px); /* 2 compassos por linha */
+            width: calc(50% - 7.5px);
             box-sizing: border-box;
             position: relative;
+            margin-top: 10px;
         }
         .compasso-label {
-            position: absolute; top: -10px; left: 10px; background: #252526; padding: 0 5px; font-size: 12px; font-weight: bold; color: #888;
+            position: absolute; top: -12px; left: 10px; background: #252526; padding: 0 5px; font-size: 12px; font-weight: bold; color: #888;
         }
         .tempo {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+            flex: 1; display: flex; flex-direction: column; gap: 5px;
         }
         .tempo input[type="text"] {
-            width: 100%; padding: 8px 0; text-align: center; font-weight: bold; font-size: 16px; border: 1px solid #444; background: #3c3c3c; color: #fff; border-radius: 4px; box-sizing: border-box; text-transform: uppercase;
+            width: 100%; padding: 8px 0; text-align: center; font-weight: bold; font-size: 15px; border: 1px solid #444; background: #3c3c3c; color: #fff; border-radius: 4px; box-sizing: border-box;
         }
         .tempo select {
             width: 100%; padding: 4px 0; text-align: center; font-size: 12px; background: #2d2d2d; color: #aaa; border: 1px solid #444; border-radius: 4px; cursor: pointer;
         }
         .tocando { border-color: #4CAF50 !important; background: #2e4a2e !important; }
+        .erro-acorde { border-color: #f44336 !important; background: #4a2e2e !important; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="painel-controle">
-        <div>
+        <div style="display: flex; gap: 20px;">
             <label>BPM: <input type="number" id="bpm-input" value="100"></label>
-            <label style="margin-left: 20px;">
-                <input type="checkbox" id="metro-toggle"> Metrônomo
-            </label>
+            <label><input type="checkbox" id="metro-toggle"> Metrônomo</label>
+            <label><input type="checkbox" id="loop-toggle"> Loop</label>
         </div>
         <div class="botoes-play">
             <button class="btn-tocar" onclick="tocarSequencia()">▶ Tocar</button>
@@ -96,6 +100,8 @@
 
     <div class="grade-compassos" id="grade">
         </div>
+    
+    <button class="btn-add" onclick="adicionarCompasso()">➕ Adicionar Compasso</button>
 </div>
 
 <script>
@@ -106,142 +112,149 @@
         envelope: { attack: 0.05, decay: 0.2, sustain: 0.8, release: 1 }
     }).toDestination();
 
-    // Sintetizador dedicado apenas para o "Click" do metrônomo
     const metronomoSynth = new Tone.MembraneSynth({ volume: -15 }).toDestination();
 
-    // --- DICIONÁRIO DE ACORDES (Com Oitavas Relativas) ---
-    // O +0 significa a oitava base escolhida, o +1 significa que a nota pulou para a próxima oitava
-    const DICIONARIO_ACORDES = {
-        'C':  ['C+0', 'E+0', 'G+0'],
-        'CM': ['C+0', 'Eb+0', 'G+0'],
-        'D':  ['D+0', 'F#+0', 'A+0'],
-        'DM': ['D+0', 'F+0', 'A+0'],
-        'E':  ['E+0', 'G#+0', 'B+0'],
-        'EM': ['E+0', 'G+0', 'B+0'],
-        'F':  ['F+0', 'A+0', 'C+1'],
-        'FM': ['F+0', 'Ab+0', 'C+1'],
-        'G':  ['G+0', 'B+0', 'D+1'],
-        'GM': ['G+0', 'Bb+0', 'D+1'],
-        'A':  ['A+0', 'C#+1', 'E+1'],
-        'AM': ['A+0', 'C+1', 'E+1'],
-        'B':  ['B+0', 'D#+1', 'F#+1'],
-        'BM': ['B+0', 'D+1', 'F#+1']
-    };
-
-    // --- CONSTRUÇÃO DA INTERFACE (8 Compassos) ---
-    const NUM_COMPASSOS = 8;
+    // --- CONTROLE DE COMPASSOS ---
     const gradeDiv = document.getElementById('grade');
+    let totalCompassos = 0;
 
-    for (let i = 0; i < NUM_COMPASSOS; i++) {
+    function criarCompasso() {
+        const i = totalCompassos;
         const compassoDiv = document.createElement('div');
         compassoDiv.className = 'compasso';
         compassoDiv.innerHTML = `<span class="compasso-label">${i + 1}</span>`;
         
-        // 4 Tempos (Semínimas) por compasso
         for (let j = 0; j < 4; j++) {
-            // ID único para referenciar durante a reprodução
             const beatId = `beat-${i}-${j}`; 
-            
             compassoDiv.innerHTML += `
                 <div class="tempo">
                     <input type="text" id="input-${beatId}" placeholder="-">
                     <select id="octave-${beatId}">
                         <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4" selected>4</option>
+                        <option value="3" selected>3</option> <option value="4">4</option>
                         <option value="5">5</option>
                     </select>
                 </div>
             `;
         }
         gradeDiv.appendChild(compassoDiv);
+        totalCompassos++;
     }
 
-    // Apenas para facilitar o teste, vou pré-preencher o primeiro compasso
+    function adicionarCompasso() {
+        criarCompasso();
+        // Se a música estiver tocando e em loop, atualiza o fim do loop dinamicamente
+        Tone.Transport.loopEnd = `${totalCompassos}:0:0`;
+    }
+
+    // Inicializa com 4 compassos
+    for (let i = 0; i < 4; i++) {
+        criarCompasso();
+    }
+
+    // Pré-preenche para testar
     document.getElementById('input-beat-0-0').value = 'C';
-    document.getElementById('input-beat-0-2').value = 'G';
+    document.getElementById('input-beat-0-2').value = 'Am7';
+    document.getElementById('input-beat-1-0').value = 'Dm7';
+    document.getElementById('input-beat-1-2').value = 'G7';
 
-    // --- LÓGICA DE REPRODUÇÃO ---
-    let eventosAgendados = []; // Guarda os IDs dos eventos para poder limpar depois
-
+    // --- LÓGICA DE REPRODUÇÃO E PARSER DE ACORDES ---
     async function tocarSequencia() {
-        await Tone.start(); // Habilita o áudio no navegador
-        pararSequencia();   // Zera qualquer coisa que esteja tocando
+        await Tone.start(); 
+        pararSequencia();   
 
-        // Configura o BPM baseado no input do usuário
         Tone.Transport.bpm.value = parseInt(document.getElementById('bpm-input').value);
 
-        let acordeAtual = null;
-        let oitavaAtual = 4;
+        // Configuração do Loop
+        const isLoop = document.getElementById('loop-toggle').checked;
+        Tone.Transport.loop = isLoop;
+        Tone.Transport.loopStart = 0;
+        Tone.Transport.loopEnd = `${totalCompassos}:0:0`;
 
-        // Varre a grade inteira para construir a linha do tempo
-        for (let i = 0; i < NUM_COMPASSOS; i++) {
+        let acordeAtual = null;
+        let oitavaAtual = 3; // Oitava padrão
+
+        for (let i = 0; i < totalCompassos; i++) {
             for (let j = 0; j < 4; j++) {
                 const beatId = `beat-${i}-${j}`;
-                const inputAcorde = document.getElementById(`input-${beatId}`).value.trim().toUpperCase();
-                const selectOitava = document.getElementById(`octave-${beatId}`).value;
+                const inputEl = document.getElementById(`input-${beatId}`);
+                const selectEl = document.getElementById(`octave-${beatId}`);
+                
+                // Pega o valor exatamente como o usuário digitou
+                const inputAcorde = inputEl.value.trim();
 
-                // Lógica de "Band-in-a-Box": Se a caixa tem texto, atualiza a memória. Se estiver vazia, usa a memória.
                 if (inputAcorde) {
                     acordeAtual = inputAcorde;
-                    oitavaAtual = parseInt(selectOitava);
+                    oitavaAtual = parseInt(selectEl.value);
                 }
 
-                // Calcula o momento exato no tempo musical (Compasso:Tempo:Subdivisão)
-                // Exemplo: O 2º tempo do 1º compasso é "0:1:0"
                 const tempoMusical = `${i}:${j}:0`;
 
-                // Metrônomo: Toca um click (C2 ou C3) em todos os tempos, se ativado
+                // Agendamento do Metrônomo
                 if (document.getElementById('metro-toggle').checked) {
-                    const notaClick = j === 0 ? "C3" : "C2"; // Click mais agudo na cabeça do compasso
-                    const idEvento = Tone.Transport.schedule((time) => {
+                    const notaClick = j === 0 ? "C3" : "C2"; 
+                    Tone.Transport.schedule((time) => {
                         metronomoSynth.triggerAttackRelease(notaClick, "8n", time);
                     }, tempoMusical);
-                    eventosAgendados.push(idEvento);
                 }
 
-                // Acordes: Toca se houver algum acorde na memória
-                if (acordeAtual && DICIONARIO_ACORDES[acordeAtual]) {
-                    const notasRelativas = DICIONARIO_ACORDES[acordeAtual];
+                // Agendamento dos Acordes
+                if (acordeAtual) {
+                    // Usa o Tonal.js para extrair a teoria do acorde escrito
+                    const chordInfo = Tonal.Chord.get(acordeAtual);
                     
-                    // Transforma ['C+0', 'E+0', 'G+0'] em ['C4', 'E4', 'G4'] (se a oitava for 4)
-                    const notasReais = notasRelativas.map(nota => {
-                        const partes = nota.split('+');
-                        const nomeNota = partes[0];
-                        const offset = parseInt(partes[1]);
-                        return `${nomeNota}${oitavaAtual + offset}`;
-                    });
+                    let notasReais = [];
 
-                    // Agenda o disparo do sintetizador
-                    const idEvento = Tone.Transport.schedule((time) => {
-                        // Toca o acorde com duração de 1 semínima ("4n")
-                        synth.triggerAttackRelease(notasReais, "4n", time);
+                    // Se o Tonal reconhecer o acorde (não for empty)
+                    if (!chordInfo.empty) {
+                        const raiz = chordInfo.tonic || acordeAtual.charAt(0);
+                        const raizComOitava = `${raiz}${oitavaAtual}`;
                         
-                        // Lógica Visual: Pinta a caixa atual de verde para feedback visual
+                        // Mágica: Pega os intervalos (ex: 1P, 3m, 5P) e transpõe a partir da nota raiz na oitava correta
+                        notasReais = chordInfo.intervals.map(intervalo => 
+                            Tonal.Note.transpose(raizComOitava, intervalo)
+                        );
+                    }
+
+                    Tone.Transport.schedule((time) => {
+                        // Feedback Visual
                         Tone.Draw.schedule(() => {
-                            document.querySelectorAll('input[type="text"]').forEach(el => el.classList.remove('tocando'));
-                            document.getElementById(`input-${beatId}`).classList.add('tocando');
+                            document.querySelectorAll('input[type="text"]').forEach(el => {
+                                el.classList.remove('tocando');
+                                el.classList.remove('erro-acorde');
+                            });
+                            
+                            if (chordInfo.empty) {
+                                inputEl.classList.add('erro-acorde'); // Fica vermelho se a cifra for inválida
+                            } else {
+                                inputEl.classList.add('tocando');
+                            }
                         }, time);
 
+                        // Toca o acorde
+                        if (!chordInfo.empty) {
+                            synth.triggerAttackRelease(notasReais, "4n", time);
+                        }
                     }, tempoMusical);
-                    eventosAgendados.push(idEvento);
                 }
             }
         }
 
-        // Define onde a música deve parar (no final do último compasso)
-        Tone.Transport.stop(`${NUM_COMPASSOS}:0:0`);
+        // Se não for loop, agenda para parar no final exato do último compasso
+        if (!isLoop) {
+            Tone.Transport.stop(`${totalCompassos}:0:0`);
+        }
         
-        // Dá o play no Relógio Mestre
         Tone.Transport.start();
     }
 
     function pararSequencia() {
         Tone.Transport.stop();
-        Tone.Transport.cancel(0); // Limpa toda a linha do tempo agendada
-        
-        // Remove a pintura verde de todas as caixas
-        document.querySelectorAll('input[type="text"]').forEach(el => el.classList.remove('tocando'));
+        Tone.Transport.cancel(0); 
+        document.querySelectorAll('input[type="text"]').forEach(el => {
+            el.classList.remove('tocando');
+            el.classList.remove('erro-acorde');
+        });
     }
 </script>
 
