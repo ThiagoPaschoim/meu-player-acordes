@@ -9,36 +9,31 @@
     <script src="https://cdn.jsdelivr.net/npm/@tonaljs/tonal/browser/tonal.min.js"></script>
     
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0;
-        }
-        .container {
-            background: #252526; padding: 20px; border-radius: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); width: 100%; max-width: 900px;
-        }
-        .painel-top {
-            display: flex; justify-content: space-between; align-items: center; background: #333333; padding: 15px 20px; border-radius: 8px; margin-bottom: 10px; flex-wrap: wrap; gap: 15px;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .container { background: #252526; padding: 20px; border-radius: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); width: 100%; max-width: 900px; margin-bottom: 20px;}
+        
+        /* PAINEL SUPERIOR */
+        .painel-top { display: flex; justify-content: space-between; align-items: center; background: #333333; padding: 15px 20px; border-radius: 8px; margin-bottom: 10px; flex-wrap: wrap; gap: 15px; }
         .painel-grupo { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
         .painel-top label { font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; }
         .painel-top input[type="number"] { width: 50px; padding: 5px; border-radius: 4px; border: none; font-weight: bold; text-align: center; }
         .painel-top select { padding: 5px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; }
-        
         .volume-control { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: bold; background: #444; padding: 5px 10px; border-radius: 6px;}
         input[type="range"] { cursor: pointer; width: 80px;}
 
+        /* BOTOES GERAIS */
         .botoes-play button, .btn-add { padding: 10px 15px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; transition: opacity 0.2s; }
         .botoes-play button:hover, .btn-add:hover { opacity: 0.8; }
         .btn-tocar { background-color: #4CAF50; color: white; }
         .btn-parar { background-color: #f44336; color: white; }
         .btn-add { background-color: #007acc; color: white; width: 100%; margin-top: 15px; font-size: 15px;}
         
+        /* GRADE E COMPASSOS */
         .grade-compassos { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; }
-        .compasso {
-            background: #1e1e1e; border: 2px solid #555; border-radius: 6px; padding: 12px 10px 10px 10px;
-            display: flex; gap: 5px; width: calc(50% - 7.5px); box-sizing: border-box; position: relative; margin-top: 10px;
-        }
+        .compasso { background: #1e1e1e; border: 2px solid #555; border-radius: 6px; padding: 15px 10px 10px 10px; display: flex; gap: 5px; width: calc(50% - 7.5px); box-sizing: border-box; position: relative; margin-top: 10px; }
         .compasso-label { position: absolute; top: -12px; left: 10px; background: #252526; padding: 0 5px; font-size: 12px; font-weight: bold; color: #888; }
+        .btn-del-compasso { position: absolute; top: -10px; right: -5px; background: #f44336; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.5); transition: transform 0.2s;}
+        .btn-del-compasso:hover { transform: scale(1.15); }
         .tempo { flex: 1; display: flex; flex-direction: column; gap: 5px; }
         .tempo input[type="text"] { width: 100%; padding: 8px 0; text-align: center; font-weight: bold; font-size: 15px; border: 1px solid #444; background: #3c3c3c; color: #fff; border-radius: 4px; box-sizing: border-box; }
         .tempo select { width: 100%; padding: 4px 0; text-align: center; font-size: 11px; background: #2d2d2d; color: #aaa; border: 1px solid #444; border-radius: 4px; cursor: pointer; }
@@ -46,6 +41,18 @@
         .tocando { border-color: #4CAF50 !important; background: #2e4a2e !important; }
         .erro-acorde { border-color: #f44336 !important; background: #4a2e2e !important; }
         #status-bar { text-align: center; font-size: 12px; color: #aaa; margin-top: 10px; height: 15px;}
+
+        /* ANALISADOR DE ACORDES */
+        .analisador-container { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;}
+        .box-analise { flex: 1; background: #333; padding: 15px; border-radius: 8px; min-width: 250px;}
+        .box-analise h4 { margin-top: 0; color: #61dafb; }
+        .box-analise input { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #555; background: #222; color: white; font-weight: bold; margin-bottom: 10px; box-sizing: border-box;}
+        .botoes-analise { display: flex; gap: 10px; }
+        .botoes-analise button { padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1; transition: opacity 0.2s;}
+        .botoes-analise button:hover { opacity: 0.8; }
+        .btn-analisar { background: #007acc; color: white; }
+        .btn-ouvir { background: #4CAF50; color: white; }
+        .resultado-analise { margin-top: 15px; font-size: 14px; font-weight: bold; color: #aaa; min-height: 20px;}
     </style>
 </head>
 <body>
@@ -86,19 +93,41 @@
     <div id="status-bar">Aguardando...</div>
 </div>
 
+<div class="container">
+    <h3 style="margin-top: 0; color: #fff;">🔍 Analisador e Construtor de Acordes</h3>
+    <div class="analisador-container">
+        
+        <div class="box-analise">
+            <h4>Nome ➞ Notas</h4>
+            <input type="text" id="analyze-name" placeholder="Ex: Cmaj7, Dm7b5, F/A">
+            <div class="botoes-analise">
+                <button class="btn-analisar" onclick="analisarPorNome()">Analisar Acorde</button>
+                <button class="btn-ouvir" onclick="tocarAnalise('nome')">🔊 Ouvir</button>
+            </div>
+            <div id="res-nome" class="resultado-analise"></div>
+        </div>
+
+        <div class="box-analise">
+            <h4>Notas ➞ Nome</h4>
+            <input type="text" id="analyze-notes" placeholder="Ex: C E G B (separe por espaços)">
+            <div class="botoes-analise">
+                <button class="btn-analisar" onclick="analisarPorNotas()">Descobrir Acorde</button>
+                <button class="btn-ouvir" onclick="tocarAnalise('notas')">🔊 Ouvir</button>
+            </div>
+            <div id="res-notas" class="resultado-analise"></div>
+        </div>
+
+    </div>
+</div>
+
 <script>
-    // --- CONTROLE DE VOLUMES ---
+    // --- CONTROLES GERAIS E INSTRUMENTOS ---
     Tone.Destination.volume.value = -5;
-    document.getElementById('volume-slider').addEventListener('input', (e) => {
-        Tone.Destination.volume.value = e.target.value;
-    });
+    document.getElementById('volume-slider').addEventListener('input', (e) => Tone.Destination.volume.value = e.target.value);
 
     const metronomoSynth = new Tone.MembraneSynth({ volume: -15 }).toDestination();
-    document.getElementById('metro-slider').addEventListener('input', (e) => {
-        metronomoSynth.volume.value = e.target.value;
-    });
+    document.getElementById('metro-slider').addEventListener('input', (e) => metronomoSynth.volume.value = e.target.value);
 
-    // --- CARREGAMENTO DOS INSTRUMENTOS ---
     const statusText = document.getElementById('status-bar');
     const btnPlay = document.getElementById('btn-play');
     btnPlay.disabled = true;
@@ -114,28 +143,25 @@
 
     statusText.innerText = "Baixando samples de Piano e Violão da nuvem... Aguarde.";
 
-    // 1. Piano Real (Salamander)
     const instPiano = new Tone.Sampler({
         urls: { C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
         onload: checarCarregamento
     }).toDestination();
 
-    // 2. Violão Real (Nylon Guitar via Soundfonts Mapeados)
     const instViolao = new Tone.Sampler({
         urls: { C4: "C4.mp3", E4: "E4.mp3", G4: "G4.mp3", C5: "C5.mp3" },
         baseUrl: "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/",
         onload: checarCarregamento
     }).toDestination();
 
-    // 3. Sintetizador Clássico (não precisa baixar arquivo)
     const instSynth = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: "triangle" }, envelope: { attack: 0.05, decay: 0.2, sustain: 0.8, release: 1 }
     }).toDestination();
 
     const bancoInstrumentos = { 'piano': instPiano, 'violao': instViolao, 'synth': instSynth };
 
-    // --- INTERFACE DE COMPASSOS ---
+    // --- INTERFACE DINÂMICA DE COMPASSOS ---
     const gradeDiv = document.getElementById('grade');
     let totalCompassos = 0;
 
@@ -143,7 +169,12 @@
         const i = totalCompassos;
         const compassoDiv = document.createElement('div');
         compassoDiv.className = 'compasso';
-        compassoDiv.innerHTML = `<span class="compasso-label">${i + 1}</span>`;
+        
+        // Estrutura do compasso com o botão de excluir
+        compassoDiv.innerHTML = `
+            <span class="compasso-label">${i + 1}</span>
+            <button class="btn-del-compasso" onclick="deletarCompasso(this)" title="Excluir Compasso">✖</button>
+        `;
         
         for (let j = 0; j < 4; j++) {
             const beatId = `beat-${i}-${j}`; 
@@ -168,35 +199,58 @@
         Tone.Transport.loopEnd = `${totalCompassos}:0:0`;
     }
 
+    // Função de Exclusão e Reindexação
+    function deletarCompasso(botao) {
+        if (totalCompassos <= 1) {
+            alert("A música precisa ter no mínimo 1 compasso!");
+            return;
+        }
+
+        // Remove o elemento da tela
+        const compassoDiv = botao.closest('.compasso');
+        compassoDiv.remove();
+        totalCompassos--;
+
+        // REINDEXAÇÃO: Varre todos os compassos restantes e ajusta a contagem de IDs e Labels
+        const compassosAtuais = document.querySelectorAll('.compasso');
+        compassosAtuais.forEach((comp, i) => {
+            comp.querySelector('.compasso-label').innerText = i + 1;
+            
+            const tempos = comp.querySelectorAll('.tempo');
+            tempos.forEach((tempo, j) => {
+                tempo.querySelector('input[type="text"]').id = `input-beat-${i}-${j}`;
+                tempo.querySelector('select').id = `octave-beat-${i}-${j}`;
+            });
+        });
+
+        // Atualiza a barreira do loop musical
+        Tone.Transport.loopEnd = `${totalCompassos}:0:0`;
+    }
+
+    // Inicialização
     for (let i = 0; i < 4; i++) { criarCompasso(); }
 
-    // Teste para o "Sustain" e "Slash Chords"
     document.getElementById('input-beat-0-0').value = 'C';
-    document.getElementById('input-beat-1-0').value = 'G/B'; // Virou o compasso, novo ataque
+    document.getElementById('input-beat-1-0').value = 'G/B'; 
     document.getElementById('input-beat-2-0').value = 'Am7';
-    document.getElementById('input-beat-2-2').value = 'Am7'; // Bate de novo no tempo 3
     document.getElementById('input-beat-3-0').value = 'Fmaj7';
 
-    // --- LÓGICA CORE: ÁUDIO vs VISUAL ---
+    // --- LÓGICA CORE DO SEQUENCIADOR ---
     let instSelecionado = null;
 
-    // Função que agenda o áudio com duração customizada
     function agendarAudio(ataque) {
         const timeStr = `${ataque.comp}:${ataque.tempo}:0`;
-        const duracaoStr = `${ataque.duracao} * 4n`; // Multiplica a duração em semínimas (ex: 3 * 4n)
+        const duracaoStr = `${ataque.duracao} * 4n`; 
         
         let partes = ataque.acorde.split('/');
         let mainChord = Tonal.Chord.get(partes[0]);
         if (mainChord.empty) return;
 
-        // Transpõe os intervalos para montar o acorde
         let notasReais = mainChord.intervals.map(ivl => Tonal.Note.transpose(`${mainChord.tonic}${ataque.oitava}`, ivl));
 
-        // Lógica do Slash Chord (Baixo Invertido)
         if (partes.length > 1 && partes[1]) {
-            // Formata a nota (ex: e -> E, f# -> F#) para o Tonal entender
             let baixo = partes[1].charAt(0).toUpperCase() + partes[1].slice(1).toLowerCase();
-            notasReais.push(`${baixo}${ataque.oitava - 1}`); // Injeta o baixo uma oitava abaixo
+            notasReais.push(`${baixo}${ataque.oitava - 1}`); 
         }
 
         Tone.Transport.schedule((time) => {
@@ -218,7 +272,7 @@
 
         let acordeVigente = null;
         let oitavaVigente = 3;
-        let ataquePendente = null; // Guarda o acorde que está sendo "segurado" (Sustain)
+        let ataquePendente = null;
 
         for (let i = 0; i < totalCompassos; i++) {
             for (let j = 0; j < 4; j++) {
@@ -227,7 +281,6 @@
                 const selectEl = document.getElementById(`octave-${beatId}`);
                 const inputAcorde = inputEl.value.trim();
 
-                // Atualiza a "memória" se o usuário digitou algo
                 if (inputAcorde) {
                     acordeVigente = inputAcorde;
                     oitavaVigente = parseInt(selectEl.value);
@@ -235,7 +288,6 @@
 
                 const tempoMusical = `${i}:${j}:0`;
 
-                // Metrônomo
                 if (document.getElementById('metro-toggle').checked) {
                     const notaClick = j === 0 ? "C3" : "C2"; 
                     Tone.Transport.schedule((time) => {
@@ -243,40 +295,25 @@
                     }, tempoMusical);
                 }
 
-                // --- 1. LÓGICA DO ÁUDIO (SUSTAIN/LEGATO) ---
-                // É considerado um "Ataque" se for o 1º tempo do compasso OU se houver um acorde explícito escrito
                 const ehAtaque = (j === 0) || (inputAcorde !== "");
 
                 if (ehAtaque) {
-                    // Se havia uma nota soando antes, agenda ela com a duração que ela acumulou até agora
-                    if (ataquePendente) {
-                        agendarAudio(ataquePendente);
-                    }
-                    
-                    // Inicia o "Ataque Pendente" atual
+                    if (ataquePendente) agendarAudio(ataquePendente);
                     if (acordeVigente) {
-                        ataquePendente = {
-                            acorde: acordeVigente, oitava: oitavaVigente, comp: i, tempo: j, duracao: 1
-                        };
+                        ataquePendente = { acorde: acordeVigente, oitava: oitavaVigente, comp: i, tempo: j, duracao: 1 };
                     } else {
-                        ataquePendente = null; // Vazio, fica em silêncio
+                        ataquePendente = null; 
                     }
                 } else {
-                    // Não é ataque (quadrado vazio e j>0). Apenas aumenta o tempo que a nota vai ficar soando.
-                    if (ataquePendente) {
-                        ataquePendente.duracao++;
-                    }
+                    if (ataquePendente) ataquePendente.duracao++;
                 }
 
-                // --- 2. LÓGICA DO VISUAL (CURSOR CAMINHANDO) ---
                 Tone.Transport.schedule((time) => {
                     Tone.Draw.schedule(() => {
-                        // Limpa todos os outros quadrados
                         document.querySelectorAll('input[type="text"]').forEach(el => {
-                            el.classList.remove('tocando', 'erro-acorde');
+                            if(el.id.startsWith("input-beat")) el.classList.remove('tocando', 'erro-acorde');
                         });
                         
-                        // Verifica erro se houver texto
                         if (inputAcorde) {
                             const checkChord = Tonal.Chord.get(inputAcorde.split('/')[0]);
                             if (checkChord.empty) {
@@ -285,7 +322,6 @@
                                 inputEl.classList.add('tocando');
                             }
                         } else {
-                            // Mesmo sendo espaço em branco, acende a luz de tocando para o feedback visual
                             inputEl.classList.add('tocando'); 
                         }
                     }, time);
@@ -293,18 +329,13 @@
             }
         }
 
-        // Fim do loop principal: Agenda o último acorde que sobrou pendente
-        if (ataquePendente) {
-            agendarAudio(ataquePendente);
-        }
+        if (ataquePendente) agendarAudio(ataquePendente);
 
-        // Ajuste da Posição de Início
         let startMeasure = parseInt(document.getElementById('start-measure').value);
         if (startMeasure > totalCompassos) startMeasure = totalCompassos;
         if (startMeasure < 1) startMeasure = 1;
         
         Tone.Transport.position = `${startMeasure - 1}:0:0`;
-        
         if (!isLoop) Tone.Transport.stop(`${totalCompassos}:0:0`);
         
         Tone.Transport.start();
@@ -315,9 +346,73 @@
         Tone.Transport.stop();
         Tone.Transport.cancel(0); 
         document.querySelectorAll('input[type="text"]').forEach(el => {
-            el.classList.remove('tocando', 'erro-acorde');
+            if(el.id.startsWith("input-beat")) el.classList.remove('tocando', 'erro-acorde');
         });
         statusText.innerText = "Parado.";
+    }
+
+    // --- ANALISADOR DE ACORDES ---
+    let memoriaNotasNome = [];
+    let memoriaNotasInversao = [];
+
+    // Toca as notas que foram processadas pela analise
+    async function tocarAcordeIsolado(notasArray) {
+        await Tone.start();
+        if(!notasArray || notasArray.length === 0) return;
+        
+        const instAnalise = bancoInstrumentos[document.getElementById('instrument-select').value];
+        // Se a nota não tiver oitava (ex: "C" em vez de "C4"), força a oitava 4 para soar no meio do teclado
+        const notasParaTocar = notasArray.map(n => /[0-9]/.test(n) ? n : `${n}4`);
+        
+        instAnalise.triggerAttackRelease(notasParaTocar, "2n");
+    }
+
+    function analisarPorNome() {
+        const input = document.getElementById('analyze-name').value.trim();
+        let partes = input.split('/');
+        const chordInfo = Tonal.Chord.get(partes[0]);
+        const resultDiv = document.getElementById('res-nome');
+
+        if (chordInfo.empty) {
+            resultDiv.innerText = "❌ Acorde não reconhecido na teoria musical.";
+            resultDiv.style.color = "#f44336";
+            memoriaNotasNome = [];
+        } else {
+            let notas = chordInfo.notes;
+            // Identifica se é um Slash Chord e anexa a nota no início para o "Play"
+            if (partes.length > 1 && partes[1]) {
+                const baixo = partes[1].charAt(0).toUpperCase() + partes[1].slice(1).toLowerCase();
+                notas.unshift(baixo + "2"); // Joga o baixo grave para dar destaque
+            }
+            resultDiv.innerText = "Notas que compõem: " + notas.join(" - ");
+            resultDiv.style.color = "#4CAF50";
+            memoriaNotasNome = notas;
+        }
+    }
+
+    function analisarPorNotas() {
+        const input = document.getElementById('analyze-notes').value.trim();
+        // Permite separar as notas por espaço, vírgula ou traço e limpa formatação
+        const notas = input.split(/[\s,\-]+/).map(n => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase());
+        
+        // Tonal.js detecta todos os acordes possíveis que levam essas notas
+        const chordNames = Tonal.Chord.detect(notas);
+        const resultDiv = document.getElementById('res-notas');
+
+        if (chordNames.length === 0) {
+            resultDiv.innerText = "❌ Nenhum acorde estrutural identificado com essas notas.";
+            resultDiv.style.color = "#f44336";
+            memoriaNotasInversao = [];
+        } else {
+            resultDiv.innerText = "Pode ser os Acordes: " + chordNames.join("  |  ");
+            resultDiv.style.color = "#4CAF50";
+            memoriaNotasInversao = notas;
+        }
+    }
+
+    function tocarAnalise(tipo) {
+        if (tipo === 'nome') tocarAcordeIsolado(memoriaNotasNome);
+        if (tipo === 'notas') tocarAcordeIsolado(memoriaNotasInversao);
     }
 </script>
 
