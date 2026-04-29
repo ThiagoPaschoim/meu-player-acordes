@@ -11,59 +11,28 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
+            background-color: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0;
         }
         .container {
-            background: #252526;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 900px;
+            background: #252526; padding: 20px; border-radius: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); width: 100%; max-width: 900px;
         }
-        
-        /* PAINEL SUPERIOR: Ferramentas e Volume */
         .painel-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #333333;
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-            gap: 15px;
+            display: flex; justify-content: space-between; align-items: center; background: #333333; padding: 15px 20px; border-radius: 8px; margin-bottom: 10px; flex-wrap: wrap; gap: 15px;
         }
-        .painel-grupo {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
+        .painel-grupo { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
         .painel-top label { font-weight: bold; font-size: 13px; display: flex; align-items: center; gap: 5px; }
         .painel-top input[type="number"] { width: 50px; padding: 5px; border-radius: 4px; border: none; font-weight: bold; text-align: center; }
         .painel-top select { padding: 5px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; }
         
-        /* Barra de Volume */
-        .volume-control { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: bold; }
-        input[type="range"] { cursor: pointer; }
+        .volume-control { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: bold; background: #444; padding: 5px 10px; border-radius: 6px;}
+        input[type="range"] { cursor: pointer; width: 80px;}
 
-        /* BOTOES DE PLAY E CONTROLE */
-        .botoes-play button, .btn-add {
-            padding: 10px 15px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; transition: opacity 0.2s;
-        }
+        .botoes-play button, .btn-add { padding: 10px 15px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; transition: opacity 0.2s; }
         .botoes-play button:hover, .btn-add:hover { opacity: 0.8; }
         .btn-tocar { background-color: #4CAF50; color: white; }
         .btn-parar { background-color: #f44336; color: white; }
         .btn-add { background-color: #007acc; color: white; width: 100%; margin-top: 15px; font-size: 15px;}
         
-        /* GRADE DE COMPASSOS */
         .grade-compassos { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; }
         .compasso {
             background: #1e1e1e; border: 2px solid #555; border-radius: 6px; padding: 12px 10px 10px 10px;
@@ -74,7 +43,6 @@
         .tempo input[type="text"] { width: 100%; padding: 8px 0; text-align: center; font-weight: bold; font-size: 15px; border: 1px solid #444; background: #3c3c3c; color: #fff; border-radius: 4px; box-sizing: border-box; }
         .tempo select { width: 100%; padding: 4px 0; text-align: center; font-size: 11px; background: #2d2d2d; color: #aaa; border: 1px solid #444; border-radius: 4px; cursor: pointer; }
         
-        /* ESTADOS VISUAIS */
         .tocando { border-color: #4CAF50 !important; background: #2e4a2e !important; }
         .erro-acorde { border-color: #f44336 !important; background: #4a2e2e !important; }
         #status-bar { text-align: center; font-size: 12px; color: #aaa; margin-top: 10px; height: 15px;}
@@ -88,12 +56,15 @@
             <label>Som: 
                 <select id="instrument-select">
                     <option value="piano">Piano Real</option>
-                    <option value="violao">Violão (Pluck)</option>
+                    <option value="violao">Violão Nylon</option>
                     <option value="synth">Sintetizador</option>
                 </select>
             </label>
-            <div class="volume-control">
-                🔉 <input type="range" id="volume-slider" min="-50" max="0" value="-10"> 🔊
+            <div class="volume-control" title="Volume da Música">
+                🎹 <input type="range" id="volume-slider" min="-40" max="5" value="-5">
+            </div>
+            <div class="volume-control" title="Volume do Metrônomo">
+                🥁 <input type="range" id="metro-slider" min="-50" max="0" value="-15">
             </div>
         </div>
 
@@ -116,57 +87,55 @@
 </div>
 
 <script>
-    // --- GERENCIAMENTO DE VOLUME MASTER ---
-    Tone.Destination.volume.value = -10; // Padrão
+    // --- CONTROLE DE VOLUMES ---
+    Tone.Destination.volume.value = -5;
     document.getElementById('volume-slider').addEventListener('input', (e) => {
         Tone.Destination.volume.value = e.target.value;
     });
 
-    // --- INSTRUMENTOS ---
+    const metronomoSynth = new Tone.MembraneSynth({ volume: -15 }).toDestination();
+    document.getElementById('metro-slider').addEventListener('input', (e) => {
+        metronomoSynth.volume.value = e.target.value;
+    });
+
+    // --- CARREGAMENTO DOS INSTRUMENTOS ---
     const statusText = document.getElementById('status-bar');
-    statusText.innerText = "Baixando samples de Piano da nuvem... Aguarde.";
-    document.getElementById('btn-play').disabled = true; // Bloqueia o play até o piano carregar
+    const btnPlay = document.getElementById('btn-play');
+    btnPlay.disabled = true;
 
-    // 1. Piano Real (Sampler carregando arquivos MP3 públicos)
-    const instPiano = new Tone.Sampler({
-        urls: {
-            C4: "C4.mp3",
-            "D#4": "Ds4.mp3",
-            "F#4": "Fs4.mp3",
-            A4: "A4.mp3",
-        },
-        baseUrl: "https://tonejs.github.io/audio/salamander/",
-        onload: () => {
+    let instruCarregados = 0;
+    function checarCarregamento() {
+        instruCarregados++;
+        if(instruCarregados === 2) {
             statusText.innerText = "Instrumentos carregados! Pronto para tocar.";
-            document.getElementById('btn-play').disabled = false;
+            btnPlay.disabled = false;
         }
+    }
+
+    statusText.innerText = "Baixando samples de Piano e Violão da nuvem... Aguarde.";
+
+    // 1. Piano Real (Salamander)
+    const instPiano = new Tone.Sampler({
+        urls: { C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3" },
+        baseUrl: "https://tonejs.github.io/audio/salamander/",
+        onload: checarCarregamento
     }).toDestination();
 
-
-    // 2. Violão Sintético (Sintese FM com envelope curto para simular dedilhado)
-    const instViolao = new Tone.PolySynth(Tone.FMSynth, {
-        volume: 2,
-        envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 1 },
-        harmonicity: 0.5,
-        modulationIndex: 1.2
+    // 2. Violão Real (Nylon Guitar via Soundfonts Mapeados)
+    const instViolao = new Tone.Sampler({
+        urls: { C4: "C4.mp3", E4: "E4.mp3", G4: "G4.mp3", C5: "C5.mp3" },
+        baseUrl: "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_nylon-mp3/",
+        onload: checarCarregamento
     }).toDestination();
 
-    // 3. Sintetizador (O original que estávamos usando)
+    // 3. Sintetizador Clássico (não precisa baixar arquivo)
     const instSynth = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: "triangle" }, envelope: { attack: 0.05, decay: 0.2, sustain: 0.8, release: 1 }
     }).toDestination();
 
-    // Metrônomo
-    const metronomoSynth = new Tone.MembraneSynth({ volume: -15 }).toDestination();
+    const bancoInstrumentos = { 'piano': instPiano, 'violao': instViolao, 'synth': instSynth };
 
-    // Dicionário de seleção
-    const bancoInstrumentos = {
-        'piano': instPiano,
-        'violao': instViolao,
-        'synth': instSynth
-    };
-
-    // --- CONTROLE DE COMPASSOS ---
+    // --- INTERFACE DE COMPASSOS ---
     const gradeDiv = document.getElementById('grade');
     let totalCompassos = 0;
 
@@ -201,20 +170,45 @@
 
     for (let i = 0; i < 4; i++) { criarCompasso(); }
 
-    // Pré-preenchimento com acordes invertidos para teste
+    // Teste para o "Sustain" e "Slash Chords"
     document.getElementById('input-beat-0-0').value = 'C';
-    document.getElementById('input-beat-0-2').value = 'G/B'; // Acorde invertido
-    document.getElementById('input-beat-1-0').value = 'Am7';
-    document.getElementById('input-beat-1-2').value = 'C/E'; // Acorde invertido
+    document.getElementById('input-beat-1-0').value = 'G/B'; // Virou o compasso, novo ataque
+    document.getElementById('input-beat-2-0').value = 'Am7';
+    document.getElementById('input-beat-2-2').value = 'Am7'; // Bate de novo no tempo 3
+    document.getElementById('input-beat-3-0').value = 'Fmaj7';
 
-    // --- LÓGICA DE REPRODUÇÃO E ACORDES INVERTIDOS ---
+    // --- LÓGICA CORE: ÁUDIO vs VISUAL ---
+    let instSelecionado = null;
+
+    // Função que agenda o áudio com duração customizada
+    function agendarAudio(ataque) {
+        const timeStr = `${ataque.comp}:${ataque.tempo}:0`;
+        const duracaoStr = `${ataque.duracao} * 4n`; // Multiplica a duração em semínimas (ex: 3 * 4n)
+        
+        let partes = ataque.acorde.split('/');
+        let mainChord = Tonal.Chord.get(partes[0]);
+        if (mainChord.empty) return;
+
+        // Transpõe os intervalos para montar o acorde
+        let notasReais = mainChord.intervals.map(ivl => Tonal.Note.transpose(`${mainChord.tonic}${ataque.oitava}`, ivl));
+
+        // Lógica do Slash Chord (Baixo Invertido)
+        if (partes.length > 1 && partes[1]) {
+            // Formata a nota (ex: e -> E, f# -> F#) para o Tonal entender
+            let baixo = partes[1].charAt(0).toUpperCase() + partes[1].slice(1).toLowerCase();
+            notasReais.push(`${baixo}${ataque.oitava - 1}`); // Injeta o baixo uma oitava abaixo
+        }
+
+        Tone.Transport.schedule((time) => {
+            instSelecionado.triggerAttackRelease(notasReais, duracaoStr, time);
+        }, timeStr);
+    }
+
     async function tocarSequencia() {
         await Tone.start(); 
         pararSequencia();   
 
-        // Seleciona o instrumento escolhido no dropdown
-        const instSelecionado = bancoInstrumentos[document.getElementById('instrument-select').value];
-
+        instSelecionado = bancoInstrumentos[document.getElementById('instrument-select').value];
         Tone.Transport.bpm.value = parseInt(document.getElementById('bpm-input').value);
 
         const isLoop = document.getElementById('loop-toggle').checked;
@@ -222,24 +216,26 @@
         Tone.Transport.loopStart = 0;
         Tone.Transport.loopEnd = `${totalCompassos}:0:0`;
 
-        let acordeAtual = null;
-        let oitavaAtual = 3;
+        let acordeVigente = null;
+        let oitavaVigente = 3;
+        let ataquePendente = null; // Guarda o acorde que está sendo "segurado" (Sustain)
 
         for (let i = 0; i < totalCompassos; i++) {
             for (let j = 0; j < 4; j++) {
                 const beatId = `beat-${i}-${j}`;
                 const inputEl = document.getElementById(`input-${beatId}`);
                 const selectEl = document.getElementById(`octave-${beatId}`);
-                
                 const inputAcorde = inputEl.value.trim();
 
+                // Atualiza a "memória" se o usuário digitou algo
                 if (inputAcorde) {
-                    acordeAtual = inputAcorde;
-                    oitavaAtual = parseInt(selectEl.value);
+                    acordeVigente = inputAcorde;
+                    oitavaVigente = parseInt(selectEl.value);
                 }
 
                 const tempoMusical = `${i}:${j}:0`;
 
+                // Metrônomo
                 if (document.getElementById('metro-toggle').checked) {
                     const notaClick = j === 0 ? "C3" : "C2"; 
                     Tone.Transport.schedule((time) => {
@@ -247,60 +243,69 @@
                     }, tempoMusical);
                 }
 
-                if (acordeAtual) {
-                    const chordInfo = Tonal.Chord.get(acordeAtual);
-                    let notasReais = [];
+                // --- 1. LÓGICA DO ÁUDIO (SUSTAIN/LEGATO) ---
+                // É considerado um "Ataque" se for o 1º tempo do compasso OU se houver um acorde explícito escrito
+                const ehAtaque = (j === 0) || (inputAcorde !== "");
 
-                    if (!chordInfo.empty) {
-                        const raiz = chordInfo.tonic || acordeAtual.charAt(0);
-                        const raizComOitava = `${raiz}${oitavaAtual}`;
-                        
-                        // Transpõe os intervalos padrão
-                        notasReais = chordInfo.intervals.map(intervalo => 
-                            Tonal.Note.transpose(raizComOitava, intervalo)
-                        );
-
-                        // --- MAGICA DOS ACORDES INVERTIDOS (SLASH CHORDS) ---
-                        // Se houver um baixo específico (ex: o "E" no C/E)
-                        if (chordInfo.bass) {
-                            // Adiciona a nota do baixo UMA OITAVA ABAIXO para dar sustentação
-                            const notaBaixo = `${chordInfo.bass}${oitavaAtual - 1}`;
-                            notasReais.push(notaBaixo);
-                        }
+                if (ehAtaque) {
+                    // Se havia uma nota soando antes, agenda ela com a duração que ela acumulou até agora
+                    if (ataquePendente) {
+                        agendarAudio(ataquePendente);
                     }
+                    
+                    // Inicia o "Ataque Pendente" atual
+                    if (acordeVigente) {
+                        ataquePendente = {
+                            acorde: acordeVigente, oitava: oitavaVigente, comp: i, tempo: j, duracao: 1
+                        };
+                    } else {
+                        ataquePendente = null; // Vazio, fica em silêncio
+                    }
+                } else {
+                    // Não é ataque (quadrado vazio e j>0). Apenas aumenta o tempo que a nota vai ficar soando.
+                    if (ataquePendente) {
+                        ataquePendente.duracao++;
+                    }
+                }
 
-                    Tone.Transport.schedule((time) => {
-                        Tone.Draw.schedule(() => {
-                            document.querySelectorAll('input[type="text"]').forEach(el => {
-                                el.classList.remove('tocando'); el.classList.remove('erro-acorde');
-                            });
-                            if (chordInfo.empty) {
+                // --- 2. LÓGICA DO VISUAL (CURSOR CAMINHANDO) ---
+                Tone.Transport.schedule((time) => {
+                    Tone.Draw.schedule(() => {
+                        // Limpa todos os outros quadrados
+                        document.querySelectorAll('input[type="text"]').forEach(el => {
+                            el.classList.remove('tocando', 'erro-acorde');
+                        });
+                        
+                        // Verifica erro se houver texto
+                        if (inputAcorde) {
+                            const checkChord = Tonal.Chord.get(inputAcorde.split('/')[0]);
+                            if (checkChord.empty) {
                                 inputEl.classList.add('erro-acorde');
                             } else {
                                 inputEl.classList.add('tocando');
                             }
-                        }, time);
-
-                        if (!chordInfo.empty) {
-                            // Toca as notas no instrumento escolhido
-                            instSelecionado.triggerAttackRelease(notasReais, "4n", time);
+                        } else {
+                            // Mesmo sendo espaço em branco, acende a luz de tocando para o feedback visual
+                            inputEl.classList.add('tocando'); 
                         }
-                    }, tempoMusical);
-                }
+                    }, time);
+                }, tempoMusical);
             }
         }
 
-        // --- INICIAR DE UM COMPASSO ESPECÍFICO ---
+        // Fim do loop principal: Agenda o último acorde que sobrou pendente
+        if (ataquePendente) {
+            agendarAudio(ataquePendente);
+        }
+
+        // Ajuste da Posição de Início
         let startMeasure = parseInt(document.getElementById('start-measure').value);
-        if (startMeasure > totalCompassos) startMeasure = totalCompassos; // Evita bugar se digitar um número maior que o grid
+        if (startMeasure > totalCompassos) startMeasure = totalCompassos;
         if (startMeasure < 1) startMeasure = 1;
         
-        // Define a "agulha" do tocador para começar no compasso escolhido (em programação o compasso 1 é o 0)
         Tone.Transport.position = `${startMeasure - 1}:0:0`;
         
-        if (!isLoop) {
-            Tone.Transport.stop(`${totalCompassos}:0:0`);
-        }
+        if (!isLoop) Tone.Transport.stop(`${totalCompassos}:0:0`);
         
         Tone.Transport.start();
         statusText.innerText = "Tocando...";
@@ -310,7 +315,7 @@
         Tone.Transport.stop();
         Tone.Transport.cancel(0); 
         document.querySelectorAll('input[type="text"]').forEach(el => {
-            el.classList.remove('tocando'); el.classList.remove('erro-acorde');
+            el.classList.remove('tocando', 'erro-acorde');
         });
         statusText.innerText = "Parado.";
     }
