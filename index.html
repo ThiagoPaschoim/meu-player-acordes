@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JJazzLab Pessoal - Sequenciador PRO</title>
     
+    <!-- Motores de Áudio e Teoria -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tonaljs/tonal/browser/tonal.min.js"></script>
+    <!-- Motor de Partitura -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vexflow/3.0.9/vexflow-min.js"></script>
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
         .container { background: #252526; padding: 20px; border-radius: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); width: 100%; max-width: 900px; margin-bottom: 20px;}
+        h3 { margin-top: 0; color: #fff; border-bottom: 2px solid #333; padding-bottom: 10px;}
         
         /* PAINEL SUPERIOR */
         .painel-top { display: flex; justify-content: space-between; align-items: center; background: #333333; padding: 15px 20px; border-radius: 8px; margin-bottom: 10px; flex-wrap: wrap; gap: 15px; }
@@ -22,8 +26,8 @@
         input[type="range"] { cursor: pointer; width: 80px;}
 
         /* BOTOES GERAIS */
-        .botoes-play button, .btn-add { padding: 10px 15px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; transition: opacity 0.2s; }
-        .botoes-play button:hover, .btn-add:hover { opacity: 0.8; }
+        .botoes-play button, .btn-acao { padding: 10px 15px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; transition: opacity 0.2s; }
+        .botoes-play button:hover, .btn-acao:hover { opacity: 0.8; }
         .btn-tocar { background-color: #4CAF50; color: white; }
         .btn-parar { background-color: #f44336; color: white; }
         .btn-add { background-color: #007acc; color: white; width: 100%; margin-top: 15px; font-size: 15px;}
@@ -42,22 +46,30 @@
         .erro-acorde { border-color: #f44336 !important; background: #4a2e2e !important; }
         #status-bar { text-align: center; font-size: 12px; color: #aaa; margin-top: 10px; height: 15px;}
 
-        /* ANALISADOR DE ACORDES */
-        .analisador-container { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;}
-        .box-analise { flex: 1; background: #333; padding: 15px; border-radius: 8px; min-width: 250px;}
-        .box-analise h4 { margin-top: 0; color: #61dafb; }
-        .box-analise input { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #555; background: #222; color: white; font-weight: bold; margin-bottom: 10px; box-sizing: border-box;}
-        .botoes-analise { display: flex; gap: 10px; }
-        .botoes-analise button { padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1; transition: opacity 0.2s;}
-        .botoes-analise button:hover { opacity: 0.8; }
-        .btn-analisar { background: #007acc; color: white; }
-        .btn-ouvir { background: #4CAF50; color: white; }
-        .resultado-analise { margin-top: 15px; font-size: 14px; font-weight: bold; color: #aaa; min-height: 20px;}
+        /* SEÇÃO DO GERADOR & ANALISADOR */
+        .flex-container { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;}
+        .box-ferramenta { flex: 1; background: #333; padding: 15px; border-radius: 8px; min-width: 250px;}
+        .box-ferramenta h4 { margin-top: 0; color: #61dafb; }
+        .box-ferramenta input { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #555; background: #222; color: white; font-weight: bold; margin-bottom: 10px; box-sizing: border-box;}
+        
+        .botoes-acao { display: flex; gap: 10px; }
+        .botoes-acao button { padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1; transition: opacity 0.2s;}
+        .botoes-acao button:hover { opacity: 0.8; }
+        .btn-azul { background: #007acc; color: white; }
+        .btn-verde { background: #4CAF50; color: white; }
+        .btn-roxo { background: #9c27b0; color: white; width: 100%; margin-top: 10px;}
+        
+        .resultado { margin-top: 15px; font-size: 14px; font-weight: bold; color: #aaa; min-height: 20px;}
+        #vexflow-container { background: #efefef; border-radius: 6px; padding: 10px; display: flex; justify-content: center; margin-top: 20px; min-height: 120px; align-items: center; }
+        #gen-output { background: #222; padding: 15px; border-radius: 6px; margin-top: 15px; font-size: 13px; max-height: 300px; overflow-y: auto;}
+        .acorde-gerado { margin-bottom: 10px; padding: 10px; background: #2a2a2a; border-left: 4px solid #61dafb; border-radius: 4px; }
     </style>
 </head>
 <body>
 
+<!-- 1. O SEQUENCIADOR PRINCIPAL -->
 <div class="container">
+    <h3>🎹 Sequenciador Principal</h3>
     <div class="painel-top">
         <div class="painel-grupo">
             <label>Som: 
@@ -67,12 +79,8 @@
                     <option value="synth">Sintetizador</option>
                 </select>
             </label>
-            <div class="volume-control" title="Volume da Música">
-                🎹 <input type="range" id="volume-slider" min="-40" max="5" value="-5">
-            </div>
-            <div class="volume-control" title="Volume do Metrônomo">
-                🥁 <input type="range" id="metro-slider" min="-50" max="0" value="-15">
-            </div>
+            <div class="volume-control" title="Volume da Música">🎹 <input type="range" id="volume-slider" min="-40" max="5" value="-5"></div>
+            <div class="volume-control" title="Volume do Metrônomo">🥁 <input type="range" id="metro-slider" min="-50" max="0" value="-15"></div>
         </div>
 
         <div class="painel-grupo">
@@ -89,39 +97,59 @@
     </div>
 
     <div class="grade-compassos" id="grade"></div>
-    <button class="btn-add" onclick="adicionarCompasso()">➕ Adicionar Compasso</button>
+    <button class="btn-acao btn-add" onclick="adicionarCompasso()">➕ Adicionar Compasso</button>
     <div id="status-bar">Aguardando...</div>
 </div>
 
+<!-- 2. GERADOR E ANALISADOR -->
 <div class="container">
-    <h3 style="margin-top: 0; color: #fff;">🔍 Analisador e Construtor de Acordes</h3>
-    <div class="analisador-container">
-        
-        <div class="box-analise">
-            <h4>Nome ➞ Notas</h4>
-            <input type="text" id="analyze-name" placeholder="Ex: Cmaj7, Dm7b5, F/A">
-            <div class="botoes-analise">
-                <button class="btn-analisar" onclick="analisarPorNome()">Analisar Acorde</button>
-                <button class="btn-ouvir" onclick="tocarAnalise('nome')">🔊 Ouvir</button>
+    <h3>🛠️ Ferramentas de Composição</h3>
+    
+    <div class="flex-container">
+        <!-- CAIXA DO GERADOR -->
+        <div class="box-ferramenta" style="flex: 1.5;">
+            <h4>🎲 Inteligência Harmônica (Gerador)</h4>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <label>Acordes na Progressão:</label>
+                <input type="number" id="gen-count" value="4" min="1" max="16" style="width: 70px; margin: 0;">
+                <button class="btn-acao btn-azul" onclick="gerarProgressao()" style="margin: 0; flex: 1;">Gerar Nova</button>
             </div>
-            <div id="res-nome" class="resultado-analise"></div>
+            
+            <div id="gen-output"><em>A progressão gerada aparecerá aqui...</em></div>
+            <button class="btn-acao btn-roxo" id="btn-enviar-grid" style="display: none;" onclick="enviarParaGrid()">✅ Enviar Progressão para o Sequenciador</button>
         </div>
 
-        <div class="box-analise">
-            <h4>Notas ➞ Nome</h4>
-            <input type="text" id="analyze-notes" placeholder="Ex: C E G B (separe por espaços)">
-            <div class="botoes-analise">
-                <button class="btn-analisar" onclick="analisarPorNotas()">Descobrir Acorde</button>
-                <button class="btn-ouvir" onclick="tocarAnalise('notas')">🔊 Ouvir</button>
+        <!-- CAIXAS DO ANALISADOR -->
+        <div class="box-ferramenta">
+            <h4>🔍 Analisador de Acordes</h4>
+            <input type="text" id="analyze-name" placeholder="Nome do Acorde (Ex: Cmaj7)">
+            <div class="botoes-acao">
+                <button class="btn-azul" onclick="analisarPorNome()">Analisar</button>
+                <button class="btn-verde" onclick="tocarAnalise('nome')">🔊 Ouvir</button>
             </div>
-            <div id="res-notas" class="resultado-analise"></div>
-        </div>
+            <div id="res-nome" class="resultado"></div>
+            
+            <hr style="border-color: #444; margin: 15px 0;">
+            
+            <input type="text" id="analyze-notes" placeholder="Notas Separadas (Ex: C E G B)">
+            <div class="botoes-acao">
+                <button class="btn-azul" onclick="analisarPorNotas()">Descobrir</button>
+                <button class="btn-verde" onclick="tocarAnalise('notas')">🔊 Ouvir</button>
+            </div>
+            <div id="res-notas" class="resultado"></div>
 
+            <!-- RENDERIZADOR DA PARTITURA -->
+            <div id="vexflow-container">
+                <span style="color: #888; font-size: 14px; font-weight:bold;">A Partitura aparecerá aqui</span>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    // --- CONTROLES GERAIS E INSTRUMENTOS ---
+    // ==========================================
+    // 1. ÁUDIO E INSTRUMENTOS
+    // ==========================================
     Tone.Destination.volume.value = -5;
     document.getElementById('volume-slider').addEventListener('input', (e) => Tone.Destination.volume.value = e.target.value);
 
@@ -141,8 +169,6 @@
         }
     }
 
-    statusText.innerText = "Baixando samples de Piano e Violão da nuvem... Aguarde.";
-
     const instPiano = new Tone.Sampler({
         urls: { C4: "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3", A4: "A4.mp3" },
         baseUrl: "https://tonejs.github.io/audio/salamander/",
@@ -161,7 +187,9 @@
 
     const bancoInstrumentos = { 'piano': instPiano, 'violao': instViolao, 'synth': instSynth };
 
-    // --- INTERFACE DINÂMICA DE COMPASSOS ---
+    // ==========================================
+    // 2. LÓGICA DO SEQUENCIADOR (DOM E GRADE)
+    // ==========================================
     const gradeDiv = document.getElementById('grade');
     let totalCompassos = 0;
 
@@ -170,7 +198,6 @@
         const compassoDiv = document.createElement('div');
         compassoDiv.className = 'compasso';
         
-        // Estrutura do compasso com o botão de excluir
         compassoDiv.innerHTML = `
             <span class="compasso-label">${i + 1}</span>
             <button class="btn-del-compasso" onclick="deletarCompasso(this)" title="Excluir Compasso">✖</button>
@@ -199,43 +226,37 @@
         Tone.Transport.loopEnd = `${totalCompassos}:0:0`;
     }
 
-    // Função de Exclusão e Reindexação
     function deletarCompasso(botao) {
         if (totalCompassos <= 1) {
             alert("A música precisa ter no mínimo 1 compasso!");
             return;
         }
 
-        // Remove o elemento da tela
-        const compassoDiv = botao.closest('.compasso');
-        compassoDiv.remove();
+        botao.closest('.compasso').remove();
         totalCompassos--;
 
-        // REINDEXAÇÃO: Varre todos os compassos restantes e ajusta a contagem de IDs e Labels
-        const compassosAtuais = document.querySelectorAll('.compasso');
-        compassosAtuais.forEach((comp, i) => {
+        // REINDEXAÇÃO MÁGICA
+        document.querySelectorAll('.compasso').forEach((comp, i) => {
             comp.querySelector('.compasso-label').innerText = i + 1;
-            
-            const tempos = comp.querySelectorAll('.tempo');
-            tempos.forEach((tempo, j) => {
+            comp.querySelectorAll('.tempo').forEach((tempo, j) => {
                 tempo.querySelector('input[type="text"]').id = `input-beat-${i}-${j}`;
                 tempo.querySelector('select').id = `octave-beat-${i}-${j}`;
             });
         });
 
-        // Atualiza a barreira do loop musical
         Tone.Transport.loopEnd = `${totalCompassos}:0:0`;
     }
 
-    // Inicialização
-    for (let i = 0; i < 4; i++) { criarCompasso(); }
-
+    // Inicialização do Player
+    for (let i = 0; i < 4; i++) criarCompasso();
     document.getElementById('input-beat-0-0').value = 'C';
     document.getElementById('input-beat-1-0').value = 'G/B'; 
     document.getElementById('input-beat-2-0').value = 'Am7';
     document.getElementById('input-beat-3-0').value = 'Fmaj7';
 
-    // --- LÓGICA CORE DO SEQUENCIADOR ---
+    // ==========================================
+    // 3. MOTOR DE REPRODUÇÃO
+    // ==========================================
     let instSelecionado = null;
 
     function agendarAudio(ataque) {
@@ -247,7 +268,6 @@
         if (mainChord.empty) return;
 
         let notasReais = mainChord.intervals.map(ivl => Tonal.Note.transpose(`${mainChord.tonic}${ataque.oitava}`, ivl));
-
         if (partes.length > 1 && partes[1]) {
             let baixo = partes[1].charAt(0).toUpperCase() + partes[1].slice(1).toLowerCase();
             notasReais.push(`${baixo}${ataque.oitava - 1}`); 
@@ -281,18 +301,13 @@
                 const selectEl = document.getElementById(`octave-${beatId}`);
                 const inputAcorde = inputEl.value.trim();
 
-                if (inputAcorde) {
-                    acordeVigente = inputAcorde;
-                    oitavaVigente = parseInt(selectEl.value);
-                }
+                if (inputAcorde) { acordeVigente = inputAcorde; oitavaVigente = parseInt(selectEl.value); }
 
                 const tempoMusical = `${i}:${j}:0`;
 
                 if (document.getElementById('metro-toggle').checked) {
                     const notaClick = j === 0 ? "C3" : "C2"; 
-                    Tone.Transport.schedule((time) => {
-                        metronomoSynth.triggerAttackRelease(notaClick, "8n", time);
-                    }, tempoMusical);
+                    Tone.Transport.schedule((time) => metronomoSynth.triggerAttackRelease(notaClick, "8n", time), tempoMusical);
                 }
 
                 const ehAtaque = (j === 0) || (inputAcorde !== "");
@@ -301,9 +316,7 @@
                     if (ataquePendente) agendarAudio(ataquePendente);
                     if (acordeVigente) {
                         ataquePendente = { acorde: acordeVigente, oitava: oitavaVigente, comp: i, tempo: j, duracao: 1 };
-                    } else {
-                        ataquePendente = null; 
-                    }
+                    } else { ataquePendente = null; }
                 } else {
                     if (ataquePendente) ataquePendente.duracao++;
                 }
@@ -316,14 +329,9 @@
                         
                         if (inputAcorde) {
                             const checkChord = Tonal.Chord.get(inputAcorde.split('/')[0]);
-                            if (checkChord.empty) {
-                                inputEl.classList.add('erro-acorde');
-                            } else {
-                                inputEl.classList.add('tocando');
-                            }
-                        } else {
-                            inputEl.classList.add('tocando'); 
-                        }
+                            if (checkChord.empty) inputEl.classList.add('erro-acorde');
+                            else inputEl.classList.add('tocando');
+                        } else { inputEl.classList.add('tocando'); }
                     }, time);
                 }, tempoMusical);
             }
@@ -351,20 +359,70 @@
         statusText.innerText = "Parado.";
     }
 
-    // --- ANALISADOR DE ACORDES ---
+    // ==========================================
+    // 4. ANALISADOR DE ACORDES & PARTITURA
+    // ==========================================
     let memoriaNotasNome = [];
     let memoriaNotasInversao = [];
 
-    // Toca as notas que foram processadas pela analise
     async function tocarAcordeIsolado(notasArray) {
         await Tone.start();
         if(!notasArray || notasArray.length === 0) return;
-        
         const instAnalise = bancoInstrumentos[document.getElementById('instrument-select').value];
-        // Se a nota não tiver oitava (ex: "C" em vez de "C4"), força a oitava 4 para soar no meio do teclado
         const notasParaTocar = notasArray.map(n => /[0-9]/.test(n) ? n : `${n}4`);
-        
         instAnalise.triggerAttackRelease(notasParaTocar, "2n");
+    }
+
+    // Mágica do VexFlow
+    function desenharPartitura(notasArray) {
+        const container = document.getElementById("vexflow-container");
+        container.innerHTML = ""; 
+        
+        if(!notasArray || notasArray.length === 0) {
+            container.innerHTML = '<span style="color: #888; font-size: 14px; font-weight:bold;">A Partitura aparecerá aqui</span>';
+            return;
+        }
+
+        // Prepara as notas: Garante oitavas e ordena da mais grave para a mais aguda (Exigência do VexFlow)
+        let notasComOitava = notasArray.map(n => /[0-9]/.test(n) ? n : `${n}4`);
+        notasComOitava.sort((a, b) => Tonal.Note.midi(a) - Tonal.Note.midi(b));
+
+        const VF = Vex.Flow;
+        const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+        renderer.resize(250, 150);
+        const context = renderer.getContext();
+        
+        // Stave é o pentagrama (posição x, y, largura)
+        const stave = new VF.Stave(25, 10, 200);
+        stave.addClef("treble").setContext(context).draw();
+
+        const keys = [];
+        const accidentals = [];
+
+        // Converte o formato do Tonal.js (C#4) para o VexFlow (c#/4)
+        notasComOitava.forEach(n => {
+            const match = n.match(/^([a-gA-G])([#b]*)([0-9]+)$/);
+            if(match) {
+                keys.push(`${match[1].toLowerCase()}${match[2]}/${match[3]}`);
+                accidentals.push(match[2]);
+            }
+        });
+
+        try {
+            const staveNote = new VF.StaveNote({ clef: "treble", keys: keys, duration: "w" });
+            
+            // Adiciona os sustenidos e bemóis
+            accidentals.forEach((acc, index) => {
+                if(acc) staveNote.addAccidental(index, new VF.Accidental(acc));
+            });
+
+            const voice = new VF.Voice({ num_beats: 4, beat_value: 4 });
+            voice.addTickables([staveNote]);
+            new VF.Formatter().joinVoices([voice]).format([voice], 150);
+            voice.draw(context, stave);
+        } catch (e) {
+            container.innerHTML = '<span style="color: #f44336; font-size: 12px;">Não foi possível renderizar a partitura para este acorde.</span>';
+        }
     }
 
     function analisarPorNome() {
@@ -374,45 +432,197 @@
         const resultDiv = document.getElementById('res-nome');
 
         if (chordInfo.empty) {
-            resultDiv.innerText = "❌ Acorde não reconhecido na teoria musical.";
-            resultDiv.style.color = "#f44336";
+            resultDiv.innerText = "❌ Acorde não reconhecido."; resultDiv.style.color = "#f44336";
             memoriaNotasNome = [];
         } else {
             let notas = chordInfo.notes;
-            // Identifica se é um Slash Chord e anexa a nota no início para o "Play"
             if (partes.length > 1 && partes[1]) {
                 const baixo = partes[1].charAt(0).toUpperCase() + partes[1].slice(1).toLowerCase();
-                notas.unshift(baixo + "2"); // Joga o baixo grave para dar destaque
+                notas.unshift(baixo + "3"); // Injeta o baixo para a partitura e reprodução
             }
-            resultDiv.innerText = "Notas que compõem: " + notas.join(" - ");
-            resultDiv.style.color = "#4CAF50";
+            resultDiv.innerText = "Notas: " + notas.join(" - "); resultDiv.style.color = "#4CAF50";
             memoriaNotasNome = notas;
         }
+        desenharPartitura(memoriaNotasNome);
     }
 
     function analisarPorNotas() {
         const input = document.getElementById('analyze-notes').value.trim();
-        // Permite separar as notas por espaço, vírgula ou traço e limpa formatação
         const notas = input.split(/[\s,\-]+/).map(n => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase());
-        
-        // Tonal.js detecta todos os acordes possíveis que levam essas notas
         const chordNames = Tonal.Chord.detect(notas);
         const resultDiv = document.getElementById('res-notas');
 
         if (chordNames.length === 0) {
-            resultDiv.innerText = "❌ Nenhum acorde estrutural identificado com essas notas.";
-            resultDiv.style.color = "#f44336";
+            resultDiv.innerText = "❌ Nenhum acorde identificado."; resultDiv.style.color = "#f44336";
             memoriaNotasInversao = [];
         } else {
-            resultDiv.innerText = "Pode ser os Acordes: " + chordNames.join("  |  ");
-            resultDiv.style.color = "#4CAF50";
+            resultDiv.innerText = "Pode ser: " + chordNames.join(" | "); resultDiv.style.color = "#4CAF50";
             memoriaNotasInversao = notas;
         }
+        desenharPartitura(memoriaNotasInversao);
     }
 
-    function tocarAnalise(tipo) {
-        if (tipo === 'nome') tocarAcordeIsolado(memoriaNotasNome);
-        if (tipo === 'notas') tocarAcordeIsolado(memoriaNotasInversao);
+    // ==========================================
+    // 5. O CÉREBRO: GERADOR DE PROGRESSÕES (Python -> JS)
+    // ==========================================
+    const matriz_romanos = [
+        ["Imaj7", "iim7", "iiim7", "IVmaj7", "V7", "vim7", "viim7b5"],
+        ["im7", "iim7*", "bIIImaj7", "IV7*", "vm7", "vi min7b5*", "bviimaj7*"],
+        ["im7", "bIImaj7*", "bIII7*", "ivm7", "v min7b5*", "bVImaj7", "bviim7*"],
+        ["Imaj7", "II7*", "iiim7", "#IV min7b5*", "Vmaj7*", "vim7", "viim7*"],
+        ["I7*", "iim7", "iii min7b5*", "IVmaj7", "Vmaj7*", "vim7", "bviim7*"],
+        ["im7", "ii min7b5*", "bIIImaj7*", "ivm7", "vm7", "bVImaj7*", "bVII7*"],
+        ["i min7b5*", "bIImaj7", "biiim7*", "ivm7", "bVmaj7*", "bVI7*", "bviim7"]
+    ];
+
+    const matriz_escalas = [
+        ["Jônio", "Dórico", "Frígio", "Lídio", "Mixo", "Aéolio", "Lócrio"],
+        ["Dórico", "Frígio", "Lídio", "Mixo", "Aéolio", "Lócrio", "Jônio"],
+        ["Frígio", "Lídio", "Mixo", "Aéolio", "Lócrio", "Jônio", "Dórico"],
+        ["Lídio", "Mixo", "Aéolio", "Lócrio", "Jônio", "Dórico", "Frígio"],
+        ["Mixo", "Aéolio", "Lócrio", "Jônio", "Dórico", "Frígio", "Lídio"],
+        ["Aéolio", "Lócrio", "Jônio", "Dórico", "Frígio", "Lídio", "Mixo"],
+        ["Lócrio", "Jônio", "Dórico", "Frígio", "Lídio", "Mixo", "Aéolio"]
+    ];
+
+    const notasArr = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+    const modos_nomes = ["Jônio", "Dórico", "Frígio", "Lídio", "Mixo", "Aéolio", "Lócrio"];
+    const mapa_intervalos = { 'I':0, 'i':0, 'bII':1, 'bii':1, 'II':2, 'ii':2, 'bIII':3, 'biii':3, 'III':4, 'iii':4, 'IV':5, 'iv':5, '#IV':6, '#iv':6, 'bV':6, 'bv':6, 'V':7, 'v':7, 'bVI':8, 'bvi':8, 'VI':9, 'vi':9, 'bVII':10, 'bvii':10, 'VII':11, 'vii':11 };
+
+    function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    function parse_acorde(roman_str, root_index) {
+        const match = roman_str.trim().match(/^([b#]?[ivIV]+)\s*(.*?)(\*)?$/);
+        if (!match) return [null, false, null, null];
+        
+        const grau = match[1];
+        const sufixo = match[2].trim();
+        const is_starred = !!match[3];
+        
+        const interval = mapa_intervalos[grau] !== undefined ? mapa_intervalos[grau] : 0;
+        const chord_note_idx = (root_index + interval) % 12;
+        const chord_note = notasArr[chord_note_idx];
+        
+        return [`${chord_note}${sufixo}`, is_starred, chord_note, grau];
+    }
+
+    function encontrar_pivos(current_key, current_mode, chord_idx) {
+        let [abs_chord_alvo] = parse_acorde(matriz_romanos[current_mode][chord_idx], current_key);
+        let alvos = [];
+        for (let k = 0; k < 12; k++) {
+            for (let m = 0; m < 7; m++) {
+                if (k === current_key && m === current_mode) continue;
+                for (let c_idx = 0; c_idx < 7; c_idx++) {
+                    let [t_abs_chord] = parse_acorde(matriz_romanos[m][c_idx], k);
+                    if (t_abs_chord === abs_chord_alvo) alvos.push([k, m, c_idx]);
+                }
+            }
+        }
+        return alvos;
+    }
+
+    let progressaoGerada = [];
+
+    function gerarProgressao() {
+        const num_acordes = parseInt(document.getElementById('gen-count').value);
+        if (isNaN(num_acordes) || num_acordes < 1) return;
+
+        let curr_key = randInt(0, 11);
+        let curr_mode = randInt(0, 6);
+        let just_pivoted = false;
+        progressaoGerada = [];
+
+        for (let i = 0; i < num_acordes; i++) {
+            if (just_pivoted) {
+                let indices_com_asterisco = [];
+                matriz_romanos[curr_mode].forEach((romano, idx) => {
+                    let [, is_star] = parse_acorde(romano, curr_key);
+                    if (is_star) indices_com_asterisco.push(idx);
+                });
+                
+                let c_idx = indices_com_asterisco.length > 0 ? indices_com_asterisco[randInt(0, indices_com_asterisco.length-1)] : randInt(0, 6);
+                let [abs_chord, is_star, c_note, grau] = parse_acorde(matriz_romanos[curr_mode][c_idx], curr_key);
+                
+                progressaoGerada.push({
+                    tag: "[ESTABELECIMENTO MODAL]",
+                    escala: `${c_note} ${matriz_escalas[curr_mode][c_idx]}`,
+                    romano: `${grau}${is_star ? '*' : ''} (Tom: ${notasArr[curr_key]} ${modos_nomes[curr_mode]})`,
+                    acorde: abs_chord
+                });
+                just_pivoted = false;
+            } else {
+                if (i < num_acordes - 1 && Math.random() < 0.30) {
+                    let c_idx = randInt(0, 6);
+                    let [abs_chord, , c_note, grau] = parse_acorde(matriz_romanos[curr_mode][c_idx], curr_key);
+                    let alvos = encontrar_pivos(curr_key, curr_mode, c_idx);
+                    
+                    if (alvos.length > 0) {
+                        let alvo = alvos[randInt(0, alvos.length-1)];
+                        let new_k = alvo[0], new_m = alvo[1], new_c_idx = alvo[2];
+                        let [, , t_note, t_grau] = parse_acorde(matriz_romanos[new_m][new_c_idx], new_k);
+
+                        progressaoGerada.push({
+                            tag: "[PIVÔ DE MODULAÇÃO]",
+                            escala: `Função Dupla: ${c_note} ${matriz_escalas[curr_mode][c_idx]} ---> ${t_note} ${matriz_escalas[new_m][new_c_idx]}`,
+                            romano: `${grau} (em ${notasArr[curr_key]} ${modos_nomes[curr_mode]}) == ${t_grau} (em ${notasArr[new_k]} ${modos_nomes[new_m]})`,
+                            acorde: abs_chord
+                        });
+                        curr_key = new_k; curr_mode = new_m; just_pivoted = true;
+                        continue;
+                    }
+                }
+                
+                let c_idx = randInt(0, 6);
+                let [abs_chord, is_star, c_note, grau] = parse_acorde(matriz_romanos[curr_mode][c_idx], curr_key);
+                progressaoGerada.push({
+                    tag: "",
+                    escala: `${c_note} ${matriz_escalas[curr_mode][c_idx]}`,
+                    romano: `${grau}${is_star ? '*' : ''} (Tom: ${notasArr[curr_key]} ${modos_nomes[curr_mode]})`,
+                    acorde: abs_chord
+                });
+            }
+        }
+
+        renderGeradorOutput();
+    }
+
+    function renderGeradorOutput() {
+        const outDiv = document.getElementById('gen-output');
+        outDiv.innerHTML = "";
+        progressaoGerada.forEach((p, idx) => {
+            let html = `<div class="acorde-gerado">`;
+            if(p.tag) html += `<strong style="color:#f44336; font-size: 11px;">${p.tag}</strong><br>`;
+            html += `<strong style="font-size: 16px; color: #4CAF50;">Acorde ${idx+1}: ${p.acorde}</strong><br>`;
+            html += `<span style="font-size: 12px; color: #aaa;">Escala: ${p.escala}</span><br>`;
+            html += `<span style="font-size: 12px; color: #aaa;">Grau: ${p.romano}</span>`;
+            html += `</div>`;
+            outDiv.innerHTML += html;
+        });
+        document.getElementById('btn-enviar-grid').style.display = 'block';
+    }
+
+    function enviarParaGrid() {
+        pararSequencia(); // Para a música atual por segurança
+        
+        const qtdNecessaria = progressaoGerada.length;
+        
+        // Ajusta automaticamente a quantidade de compassos
+        while(totalCompassos < qtdNecessaria) adicionarCompasso();
+        while(totalCompassos > qtdNecessaria) {
+            const compassos = document.querySelectorAll('.compasso');
+            deletarCompasso(compassos[compassos.length - 1].querySelector('.btn-del-compasso'));
+        }
+
+        // Distribui um acorde por compasso (no primeiro tempo de cada)
+        progressaoGerada.forEach((p, i) => {
+            for(let j=0; j<4; j++) {
+                document.getElementById(`input-beat-${i}-${j}`).value = ""; // Limpa os outros tempos
+            }
+            document.getElementById(`input-beat-${i}-0`).value = p.acorde; // Preenche a cabeça do compasso
+        });
+
+        alert("Progressão transferida! Rolando para o sequenciador...");
+        document.getElementById('grade').scrollIntoView({ behavior: 'smooth' });
     }
 </script>
 
