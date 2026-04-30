@@ -235,7 +235,6 @@
         botao.closest('.compasso').remove();
         totalCompassos--;
 
-        // REINDEXAÇÃO MÁGICA
         document.querySelectorAll('.compasso').forEach((comp, i) => {
             comp.querySelector('.compasso-label').innerText = i + 1;
             comp.querySelectorAll('.tempo').forEach((tempo, j) => {
@@ -247,7 +246,6 @@
         Tone.Transport.loopEnd = `${totalCompassos}:0:0`;
     }
 
-    // Inicialização do Player
     for (let i = 0; i < 4; i++) criarCompasso();
     document.getElementById('input-beat-0-0').value = 'C';
     document.getElementById('input-beat-1-0').value = 'G/B'; 
@@ -365,15 +363,48 @@
     let memoriaNotasNome = [];
     let memoriaNotasInversao = [];
 
+    // Função auxiliar que gera o conjunto ordenado de notas montadas
+    function prepararNotasEscaladas(notasArray) {
+        if(!notasArray || notasArray.length === 0) return [];
+        
+        let currentOctave = 4;
+        let lastPitch = -1;
+        
+        const notasEscaladas = notasArray.map(n => {
+            // Se já tiver uma oitava explícita (ex: o baixo invertido "E3")
+            if (/[0-9]/.test(n)) {
+                lastPitch = Tonal.Note.midi(n);
+                return n;
+            }
+            
+            // Tenta adicionar a nota na oitava atual
+            let testPitch = Tonal.Note.midi(`${n}${currentOctave}`);
+            
+            // Se a nota despencou, cruzamos a linha da oitava (ex: de B4 para C4), então avançamos para a oitava 5
+            if (lastPitch !== -1 && testPitch <= lastPitch) {
+                currentOctave++;
+                testPitch = Tonal.Note.midi(`${n}${currentOctave}`);
+            }
+            
+            lastPitch = testPitch;
+            return `${n}${currentOctave}`;
+        });
+        
+        // Garante a ordenação rigorosa exigida pelo VexFlow
+        notasEscaladas.sort((a, b) => Tonal.Note.midi(a) - Tonal.Note.midi(b));
+        return notasEscaladas;
+    }
+
     async function tocarAcordeIsolado(notasArray) {
         await Tone.start();
         if(!notasArray || notasArray.length === 0) return;
+        
         const instAnalise = bancoInstrumentos[document.getElementById('instrument-select').value];
-        const notasParaTocar = notasArray.map(n => /[0-9]/.test(n) ? n : `${n}4`);
-        instAnalise.triggerAttackRelease(notasParaTocar, "2n");
+        const notasParaTocar = prepararNotasEscaladas(notasArray); // Toca o acorde organizado do grave para agudo
+        
+        instAnalise.triggerAttackRelease(notasParaTocar, "2n", Tone.now());
     }
 
-    // Mágica do VexFlow
     function desenharPartitura(notasArray) {
         const container = document.getElementById("vexflow-container");
         container.innerHTML = ""; 
@@ -383,23 +414,19 @@
             return;
         }
 
-        // Prepara as notas: Garante oitavas e ordena da mais grave para a mais aguda (Exigência do VexFlow)
-        let notasComOitava = notasArray.map(n => /[0-9]/.test(n) ? n : `${n}4`);
-        notasComOitava.sort((a, b) => Tonal.Note.midi(a) - Tonal.Note.midi(b));
+        const notasComOitava = prepararNotasEscaladas(notasArray);
 
         const VF = Vex.Flow;
         const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
         renderer.resize(250, 150);
         const context = renderer.getContext();
         
-        // Stave é o pentagrama (posição x, y, largura)
         const stave = new VF.Stave(25, 10, 200);
         stave.addClef("treble").setContext(context).draw();
 
         const keys = [];
         const accidentals = [];
 
-        // Converte o formato do Tonal.js (C#4) para o VexFlow (c#/4)
         notasComOitava.forEach(n => {
             const match = n.match(/^([a-gA-G])([#b]*)([0-9]+)$/);
             if(match) {
@@ -411,7 +438,6 @@
         try {
             const staveNote = new VF.StaveNote({ clef: "treble", keys: keys, duration: "w" });
             
-            // Adiciona os sustenidos e bemóis
             accidentals.forEach((acc, index) => {
                 if(acc) staveNote.addAccidental(index, new VF.Accidental(acc));
             });
@@ -435,10 +461,12 @@
             resultDiv.innerText = "❌ Acorde não reconhecido."; resultDiv.style.color = "#f44336";
             memoriaNotasNome = [];
         } else {
-            let notas = chordInfo.notes;
+            // [CORREÇÃO: Criar uma CÓPIA da array para não corromper a memória do Tonal.js]
+            let notas = [...chordInfo.notes]; 
+            
             if (partes.length > 1 && partes[1]) {
                 const baixo = partes[1].charAt(0).toUpperCase() + partes[1].slice(1).toLowerCase();
-                notas.unshift(baixo + "3"); // Injeta o baixo para a partitura e reprodução
+                notas.unshift(baixo + "3"); // Injeta o baixo explicitamente na oitava 3
             }
             resultDiv.innerText = "Notas: " + notas.join(" - "); resultDiv.style.color = "#4CAF50";
             memoriaNotasNome = notas;
@@ -462,17 +490,23 @@
         desenharPartitura(memoriaNotasInversao);
     }
 
+    function tocarAnalise(tipo) {
+        if (tipo === 'nome') tocarAcordeIsolado(memoriaNotasNome);
+        if (tipo === 'notas') tocarAcordeIsolado(memoriaNotasInversao);
+    }
+
     // ==========================================
     // 5. O CÉREBRO: GERADOR DE PROGRESSÕES (Python -> JS)
     // ==========================================
+    // [CORREÇÃO: 'min7b5' atualizado para a padronização 'm7b5' para compatibilidade com Tonal.js]
     const matriz_romanos = [
         ["Imaj7", "iim7", "iiim7", "IVmaj7", "V7", "vim7", "viim7b5"],
-        ["im7", "iim7*", "bIIImaj7", "IV7*", "vm7", "vi min7b5*", "bviimaj7*"],
-        ["im7", "bIImaj7*", "bIII7*", "ivm7", "v min7b5*", "bVImaj7", "bviim7*"],
-        ["Imaj7", "II7*", "iiim7", "#IV min7b5*", "Vmaj7*", "vim7", "viim7*"],
-        ["I7*", "iim7", "iii min7b5*", "IVmaj7", "Vmaj7*", "vim7", "bviim7*"],
-        ["im7", "ii min7b5*", "bIIImaj7*", "ivm7", "vm7", "bVImaj7*", "bVII7*"],
-        ["i min7b5*", "bIImaj7", "biiim7*", "ivm7", "bVmaj7*", "bVI7*", "bviim7"]
+        ["im7", "iim7*", "bIIImaj7", "IV7*", "vm7", "vim7b5*", "bviimaj7*"],
+        ["im7", "bIImaj7*", "bIII7*", "ivm7", "vm7b5*", "bVImaj7", "bviim7*"],
+        ["Imaj7", "II7*", "iiim7", "#IVm7b5*", "Vmaj7*", "vim7", "viim7*"],
+        ["I7*", "iim7", "iiim7b5*", "IVmaj7", "Vmaj7*", "vim7", "bviim7*"],
+        ["im7", "iim7b5*", "bIIImaj7*", "ivm7", "vm7", "bVImaj7*", "bVII7*"],
+        ["im7b5*", "bIImaj7", "biiim7*", "ivm7", "bVmaj7*", "bVI7*", "bviim7"]
     ];
 
     const matriz_escalas = [
@@ -602,23 +636,20 @@
     }
 
     function enviarParaGrid() {
-        pararSequencia(); // Para a música atual por segurança
-        
+        pararSequencia(); 
         const qtdNecessaria = progressaoGerada.length;
         
-        // Ajusta automaticamente a quantidade de compassos
         while(totalCompassos < qtdNecessaria) adicionarCompasso();
         while(totalCompassos > qtdNecessaria) {
             const compassos = document.querySelectorAll('.compasso');
             deletarCompasso(compassos[compassos.length - 1].querySelector('.btn-del-compasso'));
         }
 
-        // Distribui um acorde por compasso (no primeiro tempo de cada)
         progressaoGerada.forEach((p, i) => {
             for(let j=0; j<4; j++) {
-                document.getElementById(`input-beat-${i}-${j}`).value = ""; // Limpa os outros tempos
+                document.getElementById(`input-beat-${i}-${j}`).value = ""; 
             }
-            document.getElementById(`input-beat-${i}-0`).value = p.acorde; // Preenche a cabeça do compasso
+            document.getElementById(`input-beat-${i}-0`).value = p.acorde; 
         });
 
         alert("Progressão transferida! Rolando para o sequenciador...");
