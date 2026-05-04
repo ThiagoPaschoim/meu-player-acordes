@@ -477,7 +477,7 @@
     // --- ALGORITMO 1: Pop/Tradicional (Backfilling) ---
     const GRAUS_MAIOR_OLD = { 'I': [0, 'maj7'], 'ii': [2, 'm7'], 'iii': [4, 'm7'], 'IV': [5, 'maj7'], 'V': [7, '7'], 'vi': [9, 'm7'], 'vii°': [11, 'm7b5'] };
     const EMPRESTIMOS_OLD = { 'bII': [1, 'maj7'], 'bIII': [3, 'maj7'], 'iv': [5, 'm7'], 'v': [7, 'm7'], 'bVI': [8, 'maj7'], 'bVII': [10, '7'] };
-    const EXTENSOES_OLD = { 'maj7': ['maj7', 'maj9', 'maj13', '6'], 'm7': ['m7', 'm9', 'm11'], '7': ['7', '9', '13', '7(b9)', '7(#9)', '7(b13)', '7alt'], 'm7b5': ['m7b5', 'm11b5'] };
+    const EXTENSOES_OLD = { 'maj7': ['maj7', 'maj9', 'maj13', '6'], 'm7': ['m7', 'm9', 'm11'], '7': ['7', '9', '13', '7b9', '7#9', '7b13', '7alt'], 'm7b5': ['m7b5', 'm11b5'] };
 
     class AcordeOld {
         constructor(nota_raiz, qualidade, grau_romano, funcao="") { this.nota_raiz = nota_raiz; this.qualidade = qualidade; this.grau_romano = grau_romano; this.funcao = funcao; }
