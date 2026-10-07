@@ -23,9 +23,6 @@
     <!-- Motor de Partitura -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vexflow/3.0.9/vexflow-min.js"></script>
 
-
-
-
     <!-- PYSCRIPT: Motor para rodar o Python no Navegador -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
@@ -57,7 +54,7 @@
         .botoes-play button:hover, .btn-acao:hover { opacity: 0.8; }
         .btn-tocar { background-color: #4CAF50; color: white; }
         .btn-parar { background-color: #f44336; color: white; }
-        .btn-add { background-color: #007acc; color: white; width: 100%; margin-top: 15px; font-size: 15px;}
+        .btn-add { background-color: #007acc; color: white; font-size: 15px;}
         .btn-laranja { background-color: #ff9800; color: white; width: 100%; margin-top: 10px;}
         
         /* GRADE E COMPASSOS */
@@ -77,7 +74,7 @@
         /* SEÇÃO DO GERADOR & ANALISADOR */
         .flex-container { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;}
         .box-ferramenta { flex: 1; background: #333; padding: 15px; border-radius: 8px; min-width: 250px;}
-        .box-full { flex: 1 1 100%; background: #333; padding: 15px; border-radius: 8px; margin-top: 15px; }
+        .box-full { flex: 1 1 100%; background: #333; padding: 15px; border-radius: 8px;}
         .box-ferramenta h4, .box-full h4 { margin-top: 0; color: #61dafb; }
         .box-ferramenta input[type="text"], .box-full input[type="text"] { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #555; background: #222; color: white; font-weight: bold; margin-bottom: 10px; box-sizing: border-box;}
         
@@ -121,7 +118,7 @@
             <label>BPM: <input type="number" id="bpm-input" value="100" style="width: 50px;"></label>
             <label>Início (Comp): <input type="number" id="start-measure" value="1" min="1" style="width: 40px;"></label>
             <label><input type="checkbox" id="metro-toggle"> Metrônomo</label>
-            <label><input type="checkbox" id="loop-toggle"> Loop</label>
+            <label><input type="checkbox" id="loop-toggle" checked> Loop</label>
         </div>
 
         <div class="botoes-play">
@@ -130,37 +127,59 @@
         </div>
     </div>
 
+    <!-- Botões de Adicionar/Limpar inseridos antes do grid -->
+    <div class="botoes-acao" style="margin-top: 15px; margin-bottom: 10px;">
+        <button class="btn-acao btn-add" style="margin-top:0; flex: 1;" onclick="adicionarCompasso()">➕ Adicionar Compasso</button>
+        <button class="btn-acao btn-parar" style="margin-top:0; flex: 1;" onclick="limparSequenciador()">🧹 Limpar Sequenciador</button>
+    </div>
+
     <div class="grade-compassos" id="grade"></div>
-    <button class="btn-acao btn-add" onclick="adicionarCompasso()">➕ Adicionar Compasso</button>
     <button class="btn-acao btn-laranja" onclick="enviarParaAnalisadorPython()">⬇️ Transferir progressão para o analisador harmônico</button>
     <div id="status-bar">Aguardando...</div>
 </div>
 
-<!-- 2. GERADOR E ANALISADOR -->
+<!-- 2. ANALISADOR HARMÔNICO EM PYTHON (Movido para cima e renomeado) -->
+<div class="container" id="secao-analisador-python">
+    <h3>🧠 Ferramenta de Análise Harmônica</h3>
+    <p style="font-size: 12px; color: #aaa; margin-top: -5px;">Analise todo o contexto tonal, funções e modulações da progressão.</p>
+    <input type="text" id="input-progressao-python" placeholder="Ex: Cmaj7 A7 Dm7 G7 Cmaj7">
+    
+    <div class="botoes-acao">
+        <button class="btn-azul" py-click="rodar_analise_python">📊 Analisar Progressão</button>
+    </div>
+    
+    <div id="resultado-analise-python">
+        <em>O PyScript está carregando o ambiente Python. Os resultados da análise aparecerão aqui...</em>
+    </div>
+    
+    <button class="btn-acao btn-verde" style="width: 100%; margin-top: 15px;" onclick="enviarParaSequenciadorDoPython()">⬆️ Transferir sequencia de acordes para o sequenciador principal</button>
+</div>
+
+<!-- 3. GERADOR E ANALISADOR -->
 <div class="container">
     <h3>🛠️ Ferramentas de Composição</h3>
     
     <div class="flex-container">
         <!-- CAIXA DO GERADOR -->
         <div class="box-ferramenta" style="flex: 1.5;">
-            <h4>🎲 Inteligência Harmônica (Geradores)</h4>
+            <h4>🎲 Gerador de Sequências de Acordes</h4>
             
             <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
                 <label>Algoritmo:</label>
                 <select id="gen-algoritmo" style="flex: 1;">
-                    <option value="old">Pop / Tradicional (Backfilling)</option>
-                    <option value="jazz">Jazz / Berklee (Chord-Scale)</option>
-                    <option value="modal">Cinemático / Mistura Modal (Probabilístico)</option>
+                    <!-- O Algoritmo Tradicional foi retirado da interface (mas mantido no JS) -->
+                    <option value="modal" selected>Probabilístico</option>
+                    <option value="jazz">Jazz</option>
                 </select>
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
                 <label>Compassos:</label>
                 <select id="gen-modo-compasso" onchange="toggleManualCompassos()">
+                    <option value="manual" selected>Definir Manualmente</option>
                     <option value="auto">Aleatório (4, 8, 12, 16)</option>
-                    <option value="manual">Definir Manualmente</option>
                 </select>
-                <input type="number" id="gen-count" value="8" min="1" max="32" style="display: none; width: 60px;">
+                <input type="number" id="gen-count" value="8" min="1" max="32" style="display: inline-block; width: 60px;">
             </div>
             
             <button class="btn-acao btn-azul" onclick="gerarProgressao()" style="width: 100%;">Gerar Harmonia</button>
@@ -189,25 +208,6 @@
             <div id="res-notas" class="resultado"></div>
 
             <div id="vexflow-container"><span style="color: #888; font-size: 14px; font-weight:bold;">A Partitura aparecerá aqui</span></div>
-        </div>
-        
-        <!-- NOVA CAIXA: ANALISADOR HARMÔNICO EM PYTHON -->
-        <div class="box-full" id="secao-analisador-python">
-            <h4>🧠 Ferramenta de Análise Harmônica Completa (Python)</h4>
-            <p style="font-size: 12px; color: #aaa; margin-top: -5px;">Analise todo o contexto tonal, funções e modulações da progressão.</p>
-            <input type="text" id="input-progressao-python" placeholder="Ex: Cmaj7 A7 Dm7 G7 Cmaj7">
-            
-            <div class="botoes-acao">
-                <!-- Este botão dispara a função Python via atributo py-click -->
-                <button class="btn-azul" py-click="rodar_analise_python">📊 Analisar Progressão</button>
-            </div>
-            
-            <div id="resultado-analise-python">
-                <em>O PyScript está carregando o ambiente Python. Os resultados da análise aparecerão aqui...</em>
-            </div>
-            
-            <!-- Botão de retorno ao sequenciador -->
-            <button class="btn-acao btn-verde" style="width: 100%; margin-top: 15px;" onclick="enviarParaSequenciadorDoPython()">⬆️ Transferir sequencia de acordes para o sequenciador principal</button>
         </div>
     </div>
 </div>
@@ -302,6 +302,12 @@
         document.getElementById('grade').scrollIntoView({ behavior: 'smooth' });
     }
 
+    // Função de Limpar Sequenciador Adicionada
+    function limparSequenciador() {
+        pararSequencia();
+        document.querySelectorAll('.tempo input[type="text"]').forEach(input => input.value = "");
+    }
+
     // ==========================================
     // 1. ÁUDIO E INSTRUMENTOS
     // ==========================================
@@ -381,7 +387,29 @@
         Tone.Transport.loopEnd = `${totalCompassos}:0:0`;
     }
 
-    for (let i = 0; i < 4; i++) criarCompasso();
+    // Inicialização: Cria 8 compassos padrão e preenche a sequência
+    for (let i = 0; i < 8; i++) criarCompasso();
+    Tone.Transport.loopEnd = `8:0:0`;
+
+    const acordesPrePreenchidos = [
+        "Ebmaj7", "", "Ebmaj7", "", 
+        "Dm7b5", "", "G7b9", "", 
+        "Cm7", "", "Cm7", "", 
+        "Bbm7", "", "Eb7", "", 
+        "Abmaj7", "", "Db7", "", 
+        "Ebmaj7", "", "Cm7", "", 
+        "F7", "", "F7", "", 
+        "Fm7", "", "Bb7", ""
+    ];
+
+    acordesPrePreenchidos.forEach((acorde, idx) => {
+        if (acorde) {
+            let comp = Math.floor(idx / 4);
+            let beat = idx % 4;
+            let el = document.getElementById(`input-beat-${comp}-${beat}`);
+            if (el) el.value = acorde;
+        }
+    });
 
     // ==========================================
     // 3. MOTOR DE REPRODUÇÃO
@@ -615,6 +643,7 @@
     }
 
     // --- ALGORITMO 1: Pop/Tradicional ---
+    // Mantido dormente conforme as regras solicitadas.
     const GRAUS_MAIOR_OLD = { 'I': [0, 'maj7'], 'ii': [2, 'm7'], 'iii': [4, 'm7'], 'IV': [5, 'maj7'], 'V': [7, '7'], 'vi': [9, 'm7'], 'vii°': [11, 'm7b5'] };
     const EMPRESTIMOS_OLD = { 'bII': [1, 'maj7'], 'bIII': [3, 'maj7'], 'iv': [5, 'm7'], 'v': [7, 'm7'], 'bVI': [8, 'maj7'], 'bVII': [10, '7'] };
     const EXTENSOES_OLD = { 'maj7': ['maj7', 'maj9', 'maj13', '6'], 'm7': ['m7', 'm9', 'm11'], '7': ['7', '9', '13', '7b9', '7#9', '7b13', '7alt'], 'm7b5': ['m7b5', 'm11b5'] };
