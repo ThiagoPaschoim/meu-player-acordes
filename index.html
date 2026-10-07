@@ -5,15 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JJazzLab Pessoal - Sequenciador PRO</title>
 
-
-    
     <!-- Motores de Áudio e Teoria -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/tonal/browser/tonal.min.js"></script>
     <!-- Motor de Partitura -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vexflow/3.0.9/vexflow-min.js"></script>
+
+
+
+
+    <!-- PYSCRIPT: Motor para rodar o Python no Navegador -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
     
+    <!-- Configuração do PyScript para importar o seu arquivo Python local -->
+    <py-config>
+    {
+      "fetch": [{
+        "files": ["./analisador_harmonico_corrigido.py"]
+      }]
+    }
+    </py-config>
+
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
         .container { background: #252526; padding: 20px; border-radius: 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); width: 100%; max-width: 900px; margin-bottom: 20px;}
@@ -33,6 +47,7 @@
         .btn-tocar { background-color: #4CAF50; color: white; }
         .btn-parar { background-color: #f44336; color: white; }
         .btn-add { background-color: #007acc; color: white; width: 100%; margin-top: 15px; font-size: 15px;}
+        .btn-laranja { background-color: #ff9800; color: white; width: 100%; margin-top: 10px;}
         
         /* GRADE E COMPASSOS */
         .grade-compassos { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px; }
@@ -51,8 +66,9 @@
         /* SEÇÃO DO GERADOR & ANALISADOR */
         .flex-container { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;}
         .box-ferramenta { flex: 1; background: #333; padding: 15px; border-radius: 8px; min-width: 250px;}
-        .box-ferramenta h4 { margin-top: 0; color: #61dafb; }
-        .box-ferramenta input[type="text"] { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #555; background: #222; color: white; font-weight: bold; margin-bottom: 10px; box-sizing: border-box;}
+        .box-full { flex: 1 1 100%; background: #333; padding: 15px; border-radius: 8px; margin-top: 15px; }
+        .box-ferramenta h4, .box-full h4 { margin-top: 0; color: #61dafb; }
+        .box-ferramenta input[type="text"], .box-full input[type="text"] { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #555; background: #222; color: white; font-weight: bold; margin-bottom: 10px; box-sizing: border-box;}
         
         .botoes-acao { display: flex; gap: 10px; }
         .botoes-acao button { padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1; transition: opacity 0.2s;}
@@ -68,6 +84,8 @@
         .acorde-meta:last-child { border: none; margin-bottom: 0; padding-bottom: 0;}
         .tempo-row { display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 2px;}
         .tempo-row:last-child { border: none; }
+        
+        #resultado-analise-python { background: #efefef; color: #111; padding: 15px; border-radius: 6px; margin-top: 15px; font-size: 14px; overflow-x: auto; min-height: 60px; }
     </style>
 </head>
 <body>
@@ -103,6 +121,7 @@
 
     <div class="grade-compassos" id="grade"></div>
     <button class="btn-acao btn-add" onclick="adicionarCompasso()">➕ Adicionar Compasso</button>
+    <button class="btn-acao btn-laranja" onclick="enviarParaAnalisadorPython()">⬇️ Transferir progressão para o analisador harmônico</button>
     <div id="status-bar">Aguardando...</div>
 </div>
 
@@ -139,7 +158,7 @@
             <button class="btn-acao btn-roxo" id="btn-enviar-grid" style="display: none;" onclick="enviarParaGrid()">✅ Transferir para o Sequenciador</button>
         </div>
 
-        <!-- CAIXAS DO ANALISADOR -->
+        <!-- CAIXAS DO ANALISADOR BASICO -->
         <div class="box-ferramenta">
             <h4>🔍 Analisador de Acordes</h4>
             <input type="text" id="analyze-name" placeholder="Nome do Acorde (Ex: Cmaj7)">
@@ -160,10 +179,118 @@
 
             <div id="vexflow-container"><span style="color: #888; font-size: 14px; font-weight:bold;">A Partitura aparecerá aqui</span></div>
         </div>
+        
+        <!-- NOVA CAIXA: ANALISADOR HARMÔNICO EM PYTHON -->
+        <div class="box-full" id="secao-analisador-python">
+            <h4>🧠 Ferramenta de Análise Harmônica Completa (Python)</h4>
+            <p style="font-size: 12px; color: #aaa; margin-top: -5px;">Analise todo o contexto tonal, funções e modulações da progressão.</p>
+            <input type="text" id="input-progressao-python" placeholder="Ex: Cmaj7 A7 Dm7 G7 Cmaj7">
+            
+            <div class="botoes-acao">
+                <!-- Este botão dispara a função Python via atributo py-click -->
+                <button class="btn-azul" py-click="rodar_analise_python">📊 Analisar Progressão</button>
+            </div>
+            
+            <div id="resultado-analise-python">
+                <em>O PyScript está carregando o ambiente Python. Os resultados da análise aparecerão aqui...</em>
+            </div>
+            
+            <!-- Botão de retorno ao sequenciador -->
+            <button class="btn-acao btn-verde" style="width: 100%; margin-top: 15px;" onclick="enviarParaSequenciadorDoPython()">⬆️ Transferir sequencia de acordes para o sequenciador principal</button>
+        </div>
     </div>
 </div>
 
+<!-- Lógica Python via PyScript -->
+<script type="py">
+    from pyscript import document
+    import analisador_harmonico_corrigido as ahc
+
+    # Informar que o ambiente carregou
+    document.getElementById("resultado-analise-python").innerHTML = "<em>Ambiente Python carregado! Aguardando progressão...</em>"
+
+    def rodar_analise_python(event):
+        div_resultado = document.getElementById("resultado-analise-python")
+        texto = document.getElementById("input-progressao-python").value
+        
+        if not texto.strip():
+            div_resultado.innerHTML = "<span style='color: red; font-weight:bold;'>Por favor, insira uma sequência de acordes.</span>"
+            return
+            
+        div_resultado.innerHTML = "<em>Analisando...</em>"
+        
+        try:
+            # Chama a sua função original de análise
+            resultado = ahc.analisar(texto)
+            # Chama a sua função de formatação HTML
+            html_final = ahc.html_resultado(resultado, True)
+            # Insere o HTML gerado na página
+            div_resultado.innerHTML = html_final
+        except Exception as e:
+            div_resultado.innerHTML = f"<span style='color: red; font-weight:bold;'>Erro na Análise: {str(e)}</span>"
+</script>
+
+
+<!-- Lógica JavaScript Principal -->
 <script>
+    // ==========================================
+    // 0. NOVAS FUNÇÕES DE TRANSFERÊNCIA
+    // ==========================================
+    
+    // Do Sequenciador para o Analisador Python
+    function enviarParaAnalisadorPython() {
+        let acordes_extraidos = [];
+        document.querySelectorAll('.tempo input[type="text"]').forEach(input => {
+            let ac = input.value.trim();
+            if (ac && ac !== "/") {
+                acordes_extraidos.push(ac);
+            }
+        });
+        
+        if (acordes_extraidos.length === 0) {
+            alert("O sequenciador está vazio! Adicione acordes primeiro.");
+            return;
+        }
+        
+        document.getElementById('input-progressao-python').value = acordes_extraidos.join(" ");
+        document.getElementById('secao-analisador-python').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Do Analisador Python de volta para o Sequenciador
+    function enviarParaSequenciadorDoPython() {
+        let texto = document.getElementById('input-progressao-python').value.trim();
+        if (!texto) {
+            alert("O campo da ferramenta de análise está vazio!");
+            return;
+        }
+        
+        // Pega todos os acordes separados por espaços
+        let acordes = texto.split(/[\s,]+/).filter(a => a !== "");
+        
+        pararSequencia();
+        let qtdNecessaria = Math.ceil(acordes.length / 4);
+        
+        // Ajusta a quantidade de compassos na grade
+        while(totalCompassos < qtdNecessaria) adicionarCompasso();
+        while(totalCompassos > qtdNecessaria) {
+            const compassosNodes = document.querySelectorAll('.compasso');
+            deletarCompasso(compassosNodes[compassosNodes.length - 1].querySelector('.btn-del-compasso'));
+        }
+        
+        // Limpa o grid atual e preenche com os novos acordes
+        document.querySelectorAll('.tempo input[type="text"]').forEach(input => input.value = "");
+        acordes.forEach((acorde, idx) => {
+            let comp = Math.floor(idx / 4);
+            let tempo = idx % 4;
+            let inputId = `input-beat-${comp}-${tempo}`;
+            let inputEl = document.getElementById(inputId);
+            if(inputEl) inputEl.value = acorde;
+        });
+        
+        alert("Harmonia transferida com sucesso! Rolando para o sequenciador...");
+        document.getElementById('grade').scrollIntoView({ behavior: 'smooth' });
+    }
+
     // ==========================================
     // 1. ÁUDIO E INSTRUMENTOS
     // ==========================================
@@ -443,7 +570,7 @@
     // 5. CÉREBRO DOS GERADORES (OLD, JAZZ, MODAL)
     // ==========================================
     const NOTAS_GERADOR = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-    let memoriaProgressaoGerada = []; // Array final p/ o grid
+    let memoriaProgressaoGerada = []; 
 
     function toggleManualCompassos() {
         const modo = document.getElementById('gen-modo-compasso').value;
@@ -465,7 +592,6 @@
         else gerarProgressaoModal(num_compassos);
     }
 
-    // Helper Weighted Random
     function weightedRandom(items, weights) {
         let total = weights.reduce((acc, val) => acc + val, 0);
         let r = Math.random() * total;
@@ -477,7 +603,7 @@
         return items[items.length - 1];
     }
 
-    // --- ALGORITMO 1: Pop/Tradicional (Backfilling) ---
+    // --- ALGORITMO 1: Pop/Tradicional ---
     const GRAUS_MAIOR_OLD = { 'I': [0, 'maj7'], 'ii': [2, 'm7'], 'iii': [4, 'm7'], 'IV': [5, 'maj7'], 'V': [7, '7'], 'vi': [9, 'm7'], 'vii°': [11, 'm7b5'] };
     const EMPRESTIMOS_OLD = { 'bII': [1, 'maj7'], 'bIII': [3, 'maj7'], 'iv': [5, 'm7'], 'v': [7, 'm7'], 'bVI': [8, 'maj7'], 'bVII': [10, '7'] };
     const EXTENSOES_OLD = { 'maj7': ['maj7', 'maj9', 'maj13', '6'], 'm7': ['m7', 'm9', 'm11'], '7': ['7', '9', '13', '7b9', '7#9', '7b13', '7alt'], 'm7b5': ['m7b5', 'm11b5'] };
@@ -542,7 +668,7 @@
         document.getElementById('btn-enviar-grid').style.display = 'block';
     }
 
-    // --- ALGORITMO 2: Jazz / Berklee (Chord-Scale) ---
+    // --- ALGORITMO 2: Jazz / Berklee ---
     const CHORD_DICT_JAZZ = {
         "Imaj7": { tipo: "maj7", func: "Tônica", escala: "Jônia", intervalo: 0 }, "ii7": { tipo: "m7", func: "Subdominante", escala: "Dórica", intervalo: 2 },
         "iii7": { tipo: "m7", func: "Tônica", escala: "Frígia", intervalo: 4 }, "IVmaj7": { tipo: "maj7", func: "Subdominante", escala: "Lídia", intervalo: 5 },
@@ -611,7 +737,7 @@
         document.getElementById('btn-enviar-grid').style.display = 'block';
     }
 
-    // --- ALGORITMO 3: Modal / Cinemático (Probabilístico) ---
+    // --- ALGORITMO 3: Modal / Cinemático ---
     const MODES_MODAL = {
         "Jônio": ["Imaj7**", "iim7", "iiim7*", "IVmaj7", "V7*", "vim7", "viim7b5*"],
         "Dórico": ["im7", "iim7*", "bIIImaj7", "IV7*", "vm7", "vim7b5*", "bVIImaj7**"],
@@ -656,7 +782,7 @@
             let modo_atual = modo_base;
             let tipo_acao = "Diatônico";
 
-            if (Math.random() < 0.35) { // Empréstimo
+            if (Math.random() < 0.35) { 
                 modo_atual = modos_keys.filter(m => m !== modo_base)[Math.floor(Math.random() * 6)];
                 tipo_acao = "Empréstimo Modal";
             }
@@ -688,7 +814,6 @@
         document.getElementById('btn-enviar-grid').style.display = 'block';
     }
 
-    // Função de Envio Universal
     function enviarParaGrid() {
         pararSequencia(); 
         const qtdNecessaria = memoriaProgressaoGerada.length;
